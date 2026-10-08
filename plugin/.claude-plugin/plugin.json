@@ -1,0 +1,8 @@
+{
+  "name": "agent-kit",
+  "version": "0.11.0",
+  "description": "Work lanes, SDD or SDD + TDD with AC traceability, session resume, script registry, scoped knowledge and decisions, context budget, retros, Nuxt stacks, preflight, git-flow guard.",
+  "author": {
+    "name": "razcue"
+  }
+}

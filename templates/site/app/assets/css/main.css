@@ -1,0 +1,14 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+/* Site colours — change these to restyle the whole site. */
+@theme {
+  --color-background: oklch(0.99 0 0);
+  --color-foreground: oklch(0.2 0 0);
+  --color-primary: oklch(0.55 0.15 250);
+  --color-border: oklch(0.9 0 0);
+}
+
+.prose a {
+  color: var(--color-primary);
+}

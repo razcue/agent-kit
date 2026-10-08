@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>agent-kit — un arnés mínimo para Claude Code</title>
+  <meta name="description" content="Responde unas preguntas y obtén un proyecto que tu agente entiende: reglas aplicadas por hooks, contexto pequeño, trabajo que se retoma y specs trazadas a tests. Para Claude Code.">
+  <meta property="og:title" content="agent-kit — un arnés mínimo para Claude Code">
+  <meta property="og:description" content="Preguntas fijas, reglas aplicadas, contexto pequeño, trabajo que se retoma, specs trazadas a tests.">
+  <link rel="alternate" hreflang="en" href="../">
+  <link rel="stylesheet" href="../assets/style.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234338ca'/%3E%3Ctext x='16' y='22' font-size='16' text-anchor='middle' fill='white' font-family='monospace'%3Eak%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#top">agent<span>-kit</span></a>
+    <div class="links">
+      <a class="opt" href="#how">Cómo funciona</a>
+      <a href="#skills">Skills</a>
+      <a class="opt" href="#guardrails">Garantías</a>
+      <a class="opt" href="#knowledge">Conocimiento</a>
+      <a href="#start">Empezar</a>
+      <a href="https://github.com/razcue/agent-kit">GitHub</a>
+      <a href="../" lang="en">EN</a>
+    </div>
+  </div>
+</nav>
+
+<main id="top">
+  <section class="hero">
+    <div class="wrap">
+      <span class="kicker">Para Claude Code · plugin + CLI · MIT · v<span data-ak="version">0.11.0</span></span>
+      <h1>Responde unas preguntas.<br>Obtén un proyecto que tu agente entiende.</h1>
+      <p class="lead">agent-kit prepara un proyecto para desarrollo dirigido por agentes: las reglas las aplican hooks en vez de texto, el contexto que se carga en cada sesión se mantiene pequeño, el trabajo se retoma donde quedó y cada spec queda trazada a tests.</p>
+      <div class="cta">
+        <a class="btn primary" href="#start">Empezar</a>
+        <a class="btn" href="https://github.com/razcue/agent-kit">Ver en GitHub</a>
+      </div>
+      <div class="code" data-copy="npx @razcue/agent-kit init mi-proyecto">
+        <span class="label">bash</span><button class="copy" type="button" data-done="Copiado">Copiar</button>
+        <pre>npx @razcue/agent-kit init mi-proyecto</pre>
+      </div>
+      <p class="trust">Sin dependencias en ejecución · Node ≥ 20.11 · cada versión se prueba en Claude Code real</p>
+    </div>
+  </section>
+
+  <section id="problem">
+    <div class="wrap">
+      <h2>Lo que falla es el arnés, no el modelo</h2>
+      <p class="lead">Los agentes leen lo que cargas en cada sesión y olvidan todo lo demás. Sin un arnés, los proyectos caen en los mismos problemas:</p>
+      <div class="grid four">
+        <div class="card"><h3>Contexto carísimo</h3><p>Un ERP real en producción cargaba <b>~22.900 tokens</b> de AGENTS.md y memoria en cada sesión, antes de hacer una sola pregunta.</p></div>
+        <div class="card"><h3>Reglas escritas en prosa</h3><p>"Nunca hagas commit en main" en un Markdown es una sugerencia. Un hook que bloquea el comando es una regla.</p></div>
+        <div class="card"><h3>Scripts reescritos una y otra vez</h3><p>Los scripts escritos en /tmp no se encuentran la próxima vez, así que se reescriben: sin documentar y sin tests.</p></div>
+        <div class="card"><h3>Sesiones que olvidan</h3><p>Una sesión nueva no sabe qué spec quedó a medias, qué tarea seguía ni qué cambió.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="wrap">
+      <h2>Cómo funciona</h2>
+      <div class="grid">
+        <div class="card"><div class="num">1</div><h3>Respondes preguntas fijas</h3><p>Tipo de proyecto (monorepo de app, sitio de contenido o proyecto existente), nivel técnico, idioma de respuesta, método (SDD o SDD + TDD), convención de commits y flujo de git. Nada se adivina.</p></div>
+        <div class="card"><div class="num">2</div><h3>Obtienes la capa del agente</h3><p>Un bloque corto en AGENTS.md, <code>agent-kit.json</code>, configuración aplicada, <code>.knowledge/</code>, <code>work/</code>, <code>scripts/</code> y el plugin, activado desde su marketplace.</p></div>
+        <div class="card"><div class="num">3</div><h3>Cada sesión empieza bien</h3><p>Un hook inyecta el perfil, dónde quedó la última sesión, el trabajo activo con su siguiente tarea y un índice de conocimiento de una línea por entrada: unos 1.300 tokens.</p></div>
+      </div>
+      <div class="code">
+        <span class="label">npx @razcue/agent-kit init tienda</span>
+<pre><span class="tok-dim">? Setup</span>          <span class="tok-acc">New app monorepo</span>  <span class="tok-dim">(web + app + docs con Nuxt + Supabase)</span>
+<span class="tok-dim">? Technical level</span>  <span class="tok-acc">Technical</span>
+<span class="tok-dim">? Method</span>          <span class="tok-acc">SDD + TDD</span>
+<span class="tok-dim">? Commit messages</span> <span class="tok-acc">Conventional Commits</span>  <span class="tok-dim">(commitlint + hook de git)</span>
+<span class="tok-dim">? Git flow</span>        <span class="tok-acc">Branches + pull requests</span>
+
+  <span class="tok-ok">create</span>  apps/web · apps/app · apps/docs · packages/ui · packages/shared
+  <span class="tok-ok">create</span>  supabase/migrations/000000000000_init.sql
+  <span class="tok-ok">create</span>  AGENTS.md · CLAUDE.md · agent-kit.json · .claude/settings.json
+  <span class="tok-ok">create</span>  .knowledge/ · work/ · scripts/ · .github/workflows/check.yml
+  <span class="tok-ok">create</span>  commitlint.config.mjs · .husky/commit-msg
+<span class="tok-dim">Next: npm install &amp;&amp; claude</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <section id="lanes">
+    <div class="wrap">
+      <h2>Tres carriles, dos métodos</h2>
+      <p class="lead">El agente dice en qué carril trabaja antes de empezar, para que puedas corregir a tiempo. El método que elegiste decide cuánta prueba necesita cada cambio.</p>
+      <div class="grid">
+        <div class="card"><h3>Responder</h3><p>Preguntas y exploración. Solo lectura.</p></div>
+        <div class="card"><h3>Vía rápida</h3><p>Cambios pequeños (≤ 3 archivos, sin cambios de esquema, permisos ni dinero). Un archivo de feature con tareas y evidencia.</p></div>
+        <div class="card"><h3>Spec</h3><p>Todo lo demás: spec → tu aprobación → plan → tareas → implementación → verificación de cada criterio de aceptación.</p></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Método</th><th>Qué exige</th></tr>
+          <tr><td><b>SDD</b></td><td>Cada criterio de aceptación se prueba con un test o una comprobación reproducible.</td></tr>
+          <tr><td><b>SDD + TDD</b></td><td>Un test que falla antes de cada cambio de comportamiento (rojo → verde → refactor, casos elegidos con ZOMBIES). Los tests nombran el criterio que prueban (<code>004/AC-2</code>); preflight bloquea la lógica sin tests y las specs terminadas con criterios sin probar.</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="skills">
+    <div class="wrap">
+      <h2><span data-ak="skills">12</span> skills, cargadas solo cuando hacen falta</h2>
+      <p class="lead">Hasta que la tarea la necesita, de cada skill solo se carga su descripción. Las descripciones están probadas: cada skill se activa con una petición realista y ninguna se carga con preguntas que no tienen que ver, en haiku y en sonnet.</p>
+      <div class="grid">
+        <div class="card"><span class="skill">start</span><p>Arranque guiado en lenguaje sencillo → la primera spec con las palabras del usuario.</p></div>
+        <div class="card"><span class="skill">spec</span><p>Spec, aprobación, plan, tareas, criterios verificados.</p></div>
+        <div class="card"><span class="skill">feature</span><p>La vía rápida para cambios pequeños, con evidencia.</p></div>
+        <div class="card"><span class="skill">tdd</span><p>Rojo → verde → refactor, casos de test con ZOMBIES.</p></div>
+        <div class="card"><span class="skill">scripts</span><p>¿Hace falta un script? Buscar, crear, documentar, probar, ejecutar.</p></div>
+        <div class="card"><span class="skill">knowledge</span><p>Leer y escribir hechos en el ámbito correcto.</p></div>
+        <div class="card"><span class="skill">decide</span><p>Decisiones de arquitectura, reemplazadas en vez de borradas.</p></div>
+        <div class="card"><span class="skill">commit</span><p>Preflight, Conventional Commit, commitlint, flujo de git.</p></div>
+        <div class="card"><span class="skill">preflight</span><p>Lo que tiene que pasar antes de un merge.</p></div>
+        <div class="card"><span class="skill">retro</span><p>Convertir correcciones repetidas en reglas y conocimiento.</p></div>
+        <div class="card"><span class="skill">adopt</span><p>Pasar un AGENTS.md grande al kit, sección por sección.</p></div>
+        <div class="card"><span class="skill">stack-nuxt-supabase</span><p>Convenciones del monorepo Nuxt + Supabase.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="guardrails">
+    <div class="wrap">
+      <h2>Garantías que se aplican, no que se piden</h2>
+      <p class="lead">Cuatro hooks y unos pocos scripts hacen las comprobaciones. Fuera de los proyectos de agent-kit no hacen nada y tardan 70–100 ms cada uno.</p>
+      <div class="grid two">
+        <div class="card">
+          <h3>Guardia de git</h3>
+          <p>Aplica el flujo de git que elegiste (solo lectura, trunk o ramas + PR), incluso a través de <code>bash -c</code>, <code>eval</code>, <code>$( )</code> y alias de git. Valida los mensajes de commit antes de ejecutarlos.</p>
+        </div>
+        <div class="card">
+          <h3>Preflight</h3>
+          <p>Antes de un merge: migraciones por aplicar o editadas por error, variables de entorno y dependencias nuevas, posibles secretos, restos de depuración, permisos a los roles del navegador, scripts sin documentar, lógica sin tests, criterios sin probar.</p>
+        </div>
+        <div class="card">
+          <h3>Retomar</h3>
+          <p>Un punto de control tras cada turno; la siguiente sesión empieza sabiendo dónde quedó la anterior y la siguiente tarea de cada trabajo activo.</p>
+        </div>
+        <div class="card">
+          <h3>Aviso de scripts</h3>
+          <p>Un script escrito donde se va a perder (/tmp, la raíz del proyecto) recibe un aviso para buscar, guardar y documentar.</p>
+        </div>
+      </div>
+      <ul class="checks nevers">
+        <li>Nunca force-push, <code>reset --hard</code>, <code>clean -f</code> ni <code>--no-verify</code> desde un agente.</li>
+        <li>Nunca un commit en main en un proyecto de ramas + PR.</li>
+        <li>Ninguna escritura de git en un proyecto de solo lectura: el agente te da el comando exacto.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="knowledge">
+    <div class="wrap">
+      <h2>Conocimiento que sigue siendo barato de cargar</h2>
+      <p class="lead">Un concepto por archivo Markdown, enlazados con <code>[[nombre]]</code>, con un <code>index.md</code> y un <code>log.md</code> por carpeta: la estructura del Open Knowledge Format. Solo se carga el resumen de una línea de cada entrada; los agentes abren archivos cuando los necesitan o buscan con un script.</p>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Ámbito</th><th>Dónde vive</th><th>Se comparte con</th></tr>
+          <tr><td>business · env · decisions · ux · stack</td><td><code>.knowledge/</code> del proyecto</td><td>el repositorio del proyecto</td></tr>
+          <tr><td>local</td><td><code>.knowledge/local/</code></td><td>nadie (en .gitignore)</td></tr>
+          <tr><td>stack · meta · ux (global)</td><td>el repositorio de agent-kit</td><td>todos los proyectos que usan el plugin</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="scaffolds">
+    <div class="wrap">
+      <h2>Empieza desde un stack, o trae el tuyo</h2>
+      <div class="grid">
+        <div class="card"><h3>Monorepo de app</h3><p>Nuxt 4 + shadcn-vue + Tailwind v4 + Supabase: sitio público, SPA con capa de servidor y autenticación (login con límite de intentos, sesión restaurada, protección de rutas), sitio de ayuda, UI y esquemas Zod compartidos, CI.</p></div>
+        <div class="card"><h3>Sitio de contenido</h3><p>Un sitio Nuxt donde cada archivo Markdown es una página, pensado para personas no técnicas, con un agente que habla en lenguaje sencillo y una <a href="https://github.com/razcue/agent-kit/blob/main/docs/guia-sitio-web.md">guía en español</a>.</p></div>
+        <div class="card"><h3>Proyecto existente</h3><p>Solo la capa del agente: tu AGENTS.md se conserva y recibe un bloque gestionado; <code>adopt</code> te ayuda a adelgazarlo.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="verified">
+    <div class="wrap">
+      <h2>Verificado, no supuesto</h2>
+      <div class="stats">
+        <div class="stat"><b>100+</b><span>tests unitarios y de lint, Node 20 y 22</span></div>
+        <div class="stat"><b>En vivo</b><span>prueba en Claude Code real en cada versión</span></div>
+        <div class="stat"><b><span data-ak="skills">12</span> / <span data-ak="skills">12</span></b><span>skills se activan con su petición, y ninguna con preguntas ajenas</span></div>
+        <div class="stat"><b>9 / 9</b><span>comprobaciones de autenticación contra el servidor compilado</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="start">
+    <div class="wrap">
+      <h2>Empezar</h2>
+      <div class="code">
+        <span class="label">bash</span><button class="copy" type="button" data-done="Copiado">Copiar</button>
+<pre>npx @razcue/agent-kit init mi-proyecto   # responde las preguntas
+cd mi-proyecto &amp;&amp; npm install &amp;&amp; claude    # confía en la carpeta, acepta el plugin
+npx @razcue/agent-kit doctor              # comprueba la configuración</pre>
+      </div>
+      <p class="muted">Después: <code>agent-kit upgrade</code> pregunta solo lo nuevo y muestra qué cambió; <code>agent-kit uninstall</code> quita solo lo que añadió el kit. Si Claude Code no ofrece el plugin solo, ejecuta <code>/plugin marketplace add razcue/agent-kit</code> y luego <code>/plugin install agent-kit@agent-kit</code>.</p>
+      <p class="muted">¿No programas? La <a href="https://github.com/razcue/agent-kit/blob/main/docs/guia-sitio-web.md">guía para crear tu sitio web hablando con Claude</a> es para ti.</p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>agent-kit · MIT</span>
+    <a href="https://github.com/razcue/agent-kit">GitHub</a>
+    <a href="https://www.npmjs.com/package/@razcue/agent-kit">npm</a>
+    <a href="https://github.com/razcue/agent-kit/blob/main/CHANGELOG.md">Cambios</a>
+    <a href="../llms.txt">llms.txt</a>
+    <a href="../" lang="en">English</a>
+  </div>
+</footer>
+<script src="../assets/site.js"></script>
+</body>
+</html>

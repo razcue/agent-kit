@@ -1,0 +1,19 @@
+{
+  "$schema": "https://github.com/razcue/agent-kit#agent-kit-json",
+  "version": 1,
+  "name": "agent-kit",
+  "kind": "existing",
+  "apps": [],
+  "technicalLevel": "technical",
+  "language": "en",
+  "methodology": "sdd-tdd",
+  "commitConvention": "conventional",
+  "gitFlow": "read-only",
+  "mainBranch": "main",
+  "testIgnore": [
+    "templates/"
+  ],
+  "stack": "other",
+  "kitVersion": "0.6.0",
+  "testCommand": "node --test"
+}

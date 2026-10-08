@@ -1,0 +1,55 @@
+name: templates
+
+# The scaffolds depend on fast-moving packages (Nuxt, Docus, Supabase, shadcn-vue):
+# build them for real when they change, and weekly to catch upstream breakage.
+on:
+  push:
+    paths: ["templates/**", "cli/**", "scripts/e2e/auth.mjs", ".github/workflows/templates.yml"]
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  monorepo:
+    runs-on: ubuntu-latest
+    env:
+      APP: ${{ github.workspace }}/../scaffold-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Scaffold (web + app + docs)
+        run: node cli/index.mjs init "$APP" --yes --name app --apps web,app,docs --git trunk
+      - name: Install
+        working-directory: ${{ env.APP }}
+        run: npm install --no-audit --no-fund
+      - name: Typecheck + tests
+        working-directory: ${{ env.APP }}
+        run: npm run check
+      - name: Build app, generate web and docs
+        working-directory: ${{ env.APP }}
+        run: |
+          npm run build -w @app/app
+          npm run generate -w @app/web
+          npm run generate -w @app/docs
+      - name: Auth flow against a fake Supabase
+        run: node scripts/e2e/auth.mjs --app "$APP/apps/app"
+
+  site:
+    runs-on: ubuntu-latest
+    env:
+      SITE: ${{ github.workspace }}/../scaffold-site
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Scaffold content site
+        run: node cli/index.mjs init "$SITE" --yes --kind site --name site --lang es --level non-technical --git read-only
+      - name: Install, check, generate
+        working-directory: ${{ env.SITE }}
+        run: |
+          npm install --no-audit --no-fund
+          npm run check
+          npm run generate

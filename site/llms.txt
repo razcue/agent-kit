@@ -1,0 +1,21 @@
+# agent-kit
+
+> A minimal harness for agent-driven development with Claude Code: an npx CLI that sets up a project from fixed questions, and a Claude Code plugin with 12 skills, 4 hooks (session context + resume, git-flow guard, stray-script reminder, end-of-turn checkpoint), zero-dependency scripts and scoped knowledge.
+
+Install: `npx @razcue/agent-kit init <dir>` (questions: setup kind, technical level, reply language, method SDD or SDD + TDD, commit convention, git flow). Plugin: `/plugin marketplace add razcue/agent-kit` then `/plugin install agent-kit@agent-kit`.
+
+## Docs
+
+- [README](https://github.com/razcue/agent-kit/blob/main/README.md): what a project gets, how it works, commands
+- [CHANGELOG](https://github.com/razcue/agent-kit/blob/main/CHANGELOG.md): what changed per version
+- [Guía para no programadores (ES)](https://github.com/razcue/agent-kit/blob/main/docs/guia-sitio-web.md): building a content site by talking to Claude
+
+## Plugin
+
+- [Skills](https://github.com/razcue/agent-kit/tree/main/plugin/skills): start, adopt, spec, feature, tdd, scripts, knowledge, decide, retro, commit, preflight, stack-nuxt-supabase
+- [Hooks](https://github.com/razcue/agent-kit/blob/main/plugin/hooks/hooks.json): SessionStart, PreToolUse(Bash), PostToolUse(Write), Stop
+- [Global knowledge](https://github.com/razcue/agent-kit/tree/main/plugin/knowledge): stack, meta and ux conventions (one concept per file, index.md + log.md)
+
+## Optional
+
+- [Templates](https://github.com/razcue/agent-kit/tree/main/templates): app monorepo (Nuxt + Supabase), content site, CI

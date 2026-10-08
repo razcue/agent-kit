@@ -1,0 +1,31 @@
+{
+  "name": "@razcue/agent-kit",
+  "version": "0.11.0",
+  "description": "Minimal agent-driven development kit for Claude Code: project setup CLI, Nuxt + Supabase monorepo scaffold, scoped knowledge and decisions.",
+  "type": "module",
+  "license": "MIT",
+  "author": "razcue",
+  "bin": {
+    "agent-kit": "cli/index.mjs"
+  },
+  "files": [
+    "cli",
+    "templates",
+    "plugin/scripts",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs scripts/*/*.test.mjs",
+    "knowledge:index": "node plugin/scripts/knowledge.mjs index --global",
+    "knowledge:check": "node plugin/scripts/knowledge.mjs check --global",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.3",
+    "husky": "^9.1.7"
+  }
+}

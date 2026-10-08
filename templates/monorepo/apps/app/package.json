@@ -1,0 +1,23 @@
+{
+  "name": "@__NAME__/app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev --port 3000",
+    "build": "nuxt build",
+    "preview": "nuxt preview",
+    "typecheck": "nuxt typecheck",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@__NAME__/shared": "*",
+    "@__NAME__/ui": "*",
+    "@pinia/nuxt": "^0.11.3",
+    "@supabase/supabase-js": "^2.107.0",
+    "nuxt": "^4.4.6",
+    "pinia": "^3.0.4",
+    "vue": "^3.5.34",
+    "vue-router": "^5.0.7",
+    "zod": "^4.4.3"
+  }
+}

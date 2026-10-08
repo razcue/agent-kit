@@ -1,0 +1,7 @@
+{
+  // Only for the shadcn-vue CLI (alias resolution); apps type-check this layer.
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": { "@ui/*": ["./*"] }
+  }
+}
