@@ -1,15 +1,16 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "agent-kit",
-  "description": "razcue's agent-driven development kit",
+  "description": "Rayko Azcue's agent-driven development kit for Claude Code",
   "owner": {
-    "name": "razcue"
+    "name": "Rayko Azcue",
+    "url": "https://razcue.github.io/"
   },
   "plugins": [
     {
       "name": "agent-kit",
-      "description": "Work lanes, SDD or SDD + TDD with AC traceability, session resume, script registry, scoped knowledge and decisions, context budget, retros, Nuxt stacks, preflight, git-flow guard.",
-      "version": "0.14.0",
+      "description": "Spec-anchored SDD for Claude Code: work lanes, living specs (EARS + Given/When/Then + ZOMBIES) traced to tests, QA checklist, TDD, session resume, git-flow guard, preflight, script registry and scoped knowledge.",
+      "version": "0.14.1",
       "source": "./plugin",
       "category": "development"
     }

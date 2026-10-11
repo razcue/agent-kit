@@ -27,7 +27,7 @@ One concept per Markdown file, linked with `[[name]]`. The session context lists
    | UI/UX conventions for every project | `ux` | global |
    | architecture, workflow, cross-project decisions | `meta` | global |
 
-   Global entries go to the agent-kit clone. If `knowledge.mjs paths` says global is not writable, write the entry in the project and tell the user to run `npx @razcue/agent-kit setup` in their agent-kit clone to make global writable.
+   Global entries go to the agent-kit clone. If `knowledge.mjs paths` says global is not writable, write the entry in the project and tell the user to run `npx @razcue/agent-kit@0.14.1 setup` in their agent-kit clone to make global writable.
 3. **Write the file** `<scope>/<name>.md` (kebab-case `name` = file name):
    ```markdown
    ---

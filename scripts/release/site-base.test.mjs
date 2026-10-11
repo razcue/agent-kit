@@ -28,7 +28,25 @@ describe("site-base", () => {
     writeFileSync(join(dir, "llms.txt"), `${o}/raw/a.md`)
     writeFileSync(join(dir, "en", "a.html"), '<link href="/favicon.ico">')
     writeFileSync(join(dir, "app.js"), `${o}/x`)
-    assert.deepEqual(fixBasePath(dir, o, "/agent-kit/").sort(), ["en/a.html", "llms.txt"])
+    assert.deepEqual(fixBasePath(dir, o, "/agent-kit/").sort(), ["en/a.html", "index.html", "llms.txt"])
     assert.equal(readFileSync(join(dir, "app.js"), "utf8"), `${o}/x`, "other files untouched")
+  })
+})
+
+describe("site-base root page", async () => {
+  const { pickLocale, rootPage } = await import("./site-base.mjs")
+  it("channels.R2.S1 a root index.html is written that redirects without JavaScript", () => {
+    const dir = mkdtempSync(join(tmpdir(), "ak-root-"))
+    mkdirSync(join(dir, "en"))
+    assert.deepEqual(fixBasePath(dir, "https://razcue.github.io", "/agent-kit/").includes("index.html"), true)
+    const html = readFileSync(join(dir, "index.html"), "utf8")
+    assert.match(html, /<meta http-equiv="refresh" content="0; url=\/agent-kit\/en\/">/)
+    assert.match(html, /<link rel="canonical" href="https:\/\/razcue\.github\.io\/agent-kit\/en\/">/)
+    assert.equal(rootPage("/agent-kit/", "https://razcue.github.io"), html)
+  })
+  it("channels.R2.S2 Spanish browsers land in Spanish, others in English", () => {
+    assert.equal(pickLocale(["es-ES", "en"]), "es")
+    assert.equal(pickLocale(["fr", "de"]), "en")
+    assert.equal(pickLocale([]), "en")
   })
 })

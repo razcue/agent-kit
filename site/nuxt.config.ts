@@ -16,7 +16,7 @@ export default defineNuxtConfig({
   llms: {
     domain: process.env.NUXT_SITE_URL || "https://razcue.github.io",
     title: "agent-kit",
-    description: "A minimal harness for agent-driven development with Claude Code: an npx CLI that sets up a project from fixed questions, and a plugin with skills, hooks, living specs, QA and scoped knowledge.",
+    description: "A minimal harness for agent-driven development with Claude Code: an npx CLI (npx @razcue/agent-kit init) that sets up a project from fixed questions, and a plugin (/plugin install agent-kit --marketplace razcue/agent-kit) with skills, hooks, living specs, QA and scoped knowledge. MCP server for these docs: https://razcue-agent-kit.vercel.app/mcp",
     sections: [
       { title: "Overview", contentCollection: "landing_en" },
       { title: "Documentation", contentCollection: "docs_en" },

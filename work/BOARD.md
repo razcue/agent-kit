@@ -8,3 +8,5 @@
 | [change 002-qa-artifacts](changes/002-qa-artifacts) — QA dimension: living checklist and test data | done | 10/10 | — |
 | [change 003-docs-website](changes/003-docs-website) — Documentation website on Docus (full docs, i18n) | done | 8/8 | — |
 | [change 004-main-branch](changes/004-main-branch) — Detect the main (production) branch at setup | done | 5/5 | — |
+| [change 005-directory-listing](changes/005-directory-listing) — Ready the plugin for Anthropic's directory | done | 4/4 | — |
+| [change 006-channels](changes/006-channels) — Every channel points to the others | done | 4/4 | — |

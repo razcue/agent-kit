@@ -26,11 +26,30 @@ const RUNNERS = {
   ".mjs": ["node"],
   ".js": ["node"],
   ".cjs": ["node"],
-  ".ts": ["npx", "--yes", "tsx"],
   ".sh": ["bash"],
   ".bash": ["bash"],
   ".py": ["python3", "-I"],
 }
+// TypeScript and vitest: the project's own binaries first, else an exactly pinned npx (never a floating version).
+export const TSX = "tsx@4.23.15"
+export const VITEST = "vitest@5.0.3"
+const localBin = (project, name) => {
+  const bin = join(project, "node_modules", ".bin", name)
+  return existsSync(bin) ? bin : null
+}
+/** Command prefix that runs a script with this extension. */
+export function runnerFor(ext, project) {
+  if (ext === ".ts") {
+    const bin = localBin(project, "tsx")
+    return bin ? [bin] : ["npx", "--yes", TSX]
+  }
+  return RUNNERS[ext] ?? ["node"]
+}
+export function vitestCommand(project) {
+  const bin = localBin(project, "vitest")
+  return bin ? [bin] : ["npx", "--yes", VITEST]
+}
+
 const COMMENT = { ".sh": "#", ".bash": "#", ".py": "#", ".sql": "--" }
 const INDEX_START = "<!-- scripts:start -->"
 const INDEX_END = "<!-- scripts:end -->"
@@ -268,7 +287,7 @@ function create(spec, flags, project) {
   const name = basename(path, ext)
   const testable = [".mjs", ".js", ".ts", ".sh", ".bash"].includes(ext)
   const testFile = testable ? `${name}.test.${ext === ".ts" ? "ts" : "mjs"}` : null
-  const runner = RUNNERS[ext]?.filter((r) => r !== "--yes").join(" ")
+  const runner = ext === ".ts" ? `npx ${TSX}` : RUNNERS[ext]?.join(" ")
   const usage = flags.usage ?? (runner ? `${runner} ${relative(project, path)} <args>` : `apply ${relative(project, path)} in the SQL editor`)
   const tags = [dirname(spec) === "." ? "misc" : dirname(spec).split("/")[0]]
   mkdirSync(dirname(path), { recursive: true })
@@ -294,7 +313,7 @@ function testScripts(name, project, maxLines) {
     }
     const [cmd, ...args] =
       s.test.endsWith(".ts") || usesVitest(project)
-        ? ["npx", "vitest", "run", relative(project, s.test)]
+        ? [...vitestCommand(project), "run", relative(project, s.test)]
         : ["node", "--test", relative(project, s.test)]
     const r = runCompact({ cmd, args, cwd: project, label: `test-${s.name}`, logDir: join(project, STATE_DIR, "runs"), maxLines })
     console.log(r.text, "\n")
@@ -340,7 +359,7 @@ export function main(argv) {
       console.log(`${relative(project, target.path)} is SQL: apply it in the Supabase SQL Editor (or psql); agent-kit doesn't run it.`)
       return 2
     }
-    const [cmdName, ...pre] = RUNNERS[ext] ?? ["node"]
+    const [cmdName, ...pre] = runnerFor(ext, project)
     const r = runCompact({
       cmd: cmdName,
       args: [...pre, relative(project, target.path), ...passthrough, ...args.slice(1)],

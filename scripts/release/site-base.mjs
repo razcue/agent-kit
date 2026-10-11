@@ -4,7 +4,7 @@
 // @usage: node scripts/release/site-base.mjs <output dir> [--origin https://razcue.github.io] [--base /agent-kit/]
 // @tags: [release, site]
 // @test: site-base.test.mjs
-import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
+import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
 import { join, relative } from "node:path"
 import { pathToFileURL } from "node:url"
 
@@ -21,10 +21,44 @@ export function rewrite(file, text, origin, base) {
   return next
 }
 
+/** Pure: the locale the root page sends a browser to. */
+export function pickLocale(languages, locales = ["en", "es"], fallback = "en") {
+  for (const lang of languages) {
+    const code = String(lang).toLowerCase().split("-")[0]
+    if (locales.includes(code)) return code
+  }
+  return fallback
+}
+
+/** The root index.html for a project site: a no-JS redirect to English, upgraded to the browser's language. */
+export function rootPage(base, origin) {
+  const b = base.replace(/^\/?/, "/").replace(/\/?$/, "/")
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>agent-kit</title>
+<meta http-equiv="refresh" content="0; url=${b}en/">
+<link rel="canonical" href="${origin}${b}en/">
+<script>
+${pickLocale.toString()}
+location.replace(${JSON.stringify(b)} + pickLocale(navigator.languages || [navigator.language || ""]) + "/")
+</script>
+</head>
+<body><p><a href="${b}en/">agent-kit documentation</a> · <a href="${b}es/">documentación en español</a></p></body>
+</html>
+`
+}
+
 const walk = (dir) => readdirSync(dir).flatMap((f) => (statSync(join(dir, f)).isDirectory() ? walk(join(dir, f)) : [join(dir, f)]))
 
 export function fixBasePath(outDir, origin, base) {
   const changed = []
+  // GitHub Pages serves the site under a base path with no page at its root: add one.
+  if (base !== "/" && !existsSync(join(outDir, "index.html"))) {
+    writeFileSync(join(outDir, "index.html"), rootPage(base, origin))
+    changed.push("index.html")
+  }
   for (const path of walk(outDir).filter((p) => /\.(txt|md|html)$/.test(p))) {
     const text = readFileSync(path, "utf8")
     const next = rewrite(path, text, origin, base)

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "agent-kit-docs": {
+      "type": "http",
+      "url": "https://razcue-agent-kit.vercel.app/mcp"
+    }
+  }
+}

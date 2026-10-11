@@ -63,7 +63,7 @@ const STACK = {
 /** One line when the plugin is newer than the project's setup, else null. */
 export function driftNotice(projectVersion, plugin) {
   if (!plugin || !projectVersion || compareVersions(plugin, projectVersion) <= 0) return null
-  return `agent-kit ${plugin} is newer than this project's setup (${projectVersion}). Suggest to the user, once: \`npx @razcue/agent-kit upgrade\` (asks only new questions, shows what's new).`
+  return `agent-kit ${plugin} is newer than this project's setup (${projectVersion}). Suggest to the user, once: run the agent-kit CLI's \`upgrade\` command, npm package @razcue/agent-kit version ${plugin} (asks only new questions, shows what's new).`
 }
 
 /** "Where we left off": last checkpoint + active work with its next task. */

@@ -1,4 +1,6 @@
 // The CLI help text: printed by `agent-kit help` and turned into the website's CLI reference (scripts/release/docs.mjs).
+import { CHANNELS } from "./channels.mjs"
+
 export const HELP = `agent-kit — minimal agent-driven development kit for Claude Code
 
   agent-kit init [dir]     ask the setup questions and write the project (re-runnable)
@@ -22,4 +24,9 @@ export const HELP = `agent-kit — minimal agent-driven development kit for Clau
   agent-kit context [dir] [--budget N]   tokens loaded every session + invisible skills
   agent-kit usage [--days N]   usage signals for a retro
   agent-kit commit draft [--staged] | check "<message>"   Conventional Commit helpers
+
+Docs: ${CHANNELS.docs}
+Docs for agents (MCP): ${CHANNELS.mcp}
+Plugin: ${CHANNELS.pluginInstall}   (Claude Code)
+New project: ${CHANNELS.npx} <dir>
 `

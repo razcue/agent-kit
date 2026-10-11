@@ -24,6 +24,17 @@ agent-kit/
     └── ci/          GitHub Actions: npm run check + preflight
 ```
 
+## Channels
+
+| Channel | Where | Use |
+|---|---|---|
+| Documentation | https://razcue.github.io/agent-kit/ (English and Spanish) | Installation, concepts, guides, reference |
+| Docs for agents (MCP) | https://razcue-agent-kit.vercel.app/mcp | `claude mcp add --transport http agent-kit-docs https://razcue-agent-kit.vercel.app/mcp`; the plugin declares it too |
+| Claude Code plugin | `/plugin install agent-kit --marketplace razcue/agent-kit` | Skills, hooks, reviewer agent, scripts |
+| npm CLI | `npx @razcue/agent-kit init my-project` | Sets a project up and upgrades it |
+
+Also `llms.txt` / `llms-full.txt` on the documentation site.
+
 ## Use
 
 ```bash

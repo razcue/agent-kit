@@ -9,7 +9,7 @@ Nothing is lost: content moves, it isn't deleted, and each move is a small, revi
 
 ## 1. Measure
 - `agent-kit context` (total per session, invisible skills) and `agent-kit context --sections` (cost of every heading). Note the starting total.
-- If the project has no `agent-kit.json` yet: `npx @razcue/agent-kit init --kind existing` with the user's answers (it appends a managed block to AGENTS.md and backs up what it changes).
+- If the project has no `agent-kit.json` yet: `npx @razcue/agent-kit@0.14.1 init --kind existing` with the user's answers (it appends a managed block to AGENTS.md and backs up what it changes).
 
 ## 2. Classify every section (show the table to the user before moving anything)
 | The section is… | Destination | Why |

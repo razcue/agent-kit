@@ -8,6 +8,7 @@ import { createHash } from "node:crypto"
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
 import { dirname, join, relative } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
+import { HELP } from "../../cli/lib/help.mjs"
 import { QUESTIONS } from "../../cli/lib/init.mjs"
 import { parseFrontmatter } from "../../plugin/scripts/knowledge.mjs"
 
@@ -115,7 +116,7 @@ function headerSummary(text) {
 }
 
 export function readSource(root = ROOT) {
-  const help = readFileSync(join(root, "cli/lib/help.mjs"), "utf8").match(/export const HELP = `([\s\S]*?)`/)[1]
+  const help = HELP
   const skillDirs = (base, origin) =>
     existsSync(join(root, base))
       ? readdirSync(join(root, base))

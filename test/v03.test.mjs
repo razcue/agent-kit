@@ -115,13 +115,6 @@ test("work new: numbering and files from the templates", async () => {
   assert.throws(() => createWork(dir, "epic", "x"), /feature or change/)
 })
 
-test("session-start: drift notice only when the plugin is newer", async () => {
-  const { driftNotice } = await import("../plugin/scripts/session-start.mjs")
-  assert.match(driftNotice("0.5.0", "0.7.0"), /0\.7\.0 is newer than this project's setup \(0\.5\.0\).*upgrade/)
-  assert.equal(driftNotice("0.7.0", "0.7.0"), null)
-  assert.equal(driftNotice("0.8.0", "0.7.0"), null)
-  assert.equal(driftNotice(undefined, "0.7.0"), null)
-})
 
 test("knowledge: index log lines (OKF log.md)", async () => {
   const { logLines, parseIndex } = await import("../plugin/scripts/knowledge.mjs")

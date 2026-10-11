@@ -11,6 +11,7 @@ import { writeIndex as writeScriptsIndex } from "../../plugin/scripts/scripts.mj
 import { createPrompter } from "./prompt.mjs"
 import { SUPABASE_REF, withSupabaseMcp } from "./lifecycle.mjs"
 import { syncQa } from "../../plugin/scripts/qa.mjs"
+import { CHANNELS } from "./channels.mjs"
 
 const TEMPLATES = fileURLToPath(new URL("../../templates/", import.meta.url))
 export const KIT_VERSION = readJson(fileURLToPath(new URL("../../package.json", import.meta.url))).version
@@ -559,7 +560,8 @@ Next:
   Claude Code offers to install the agent-kit plugin (trust the folder, accept).
   If not: /plugin marketplace add ${marketplaceSpec.replace(/^github:/, "")}
           /plugin install agent-kit@agent-kit
-  Check: npx @razcue/agent-kit doctor${cfg.supabaseMcp ? "\n  Supabase MCP (read-only): approve it when claude asks, then sign in via /mcp." : ""}`)
+  Check: npx @razcue/agent-kit doctor
+  Docs: ${CHANNELS.docs} · for agents (MCP): ${CHANNELS.mcp}${cfg.supabaseMcp ? "\n  Supabase MCP (read-only): approve it when claude asks, then sign in via /mcp." : ""}`)
     return 0
   } finally {
     p?.close()

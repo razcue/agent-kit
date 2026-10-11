@@ -4,7 +4,8 @@
 // @usage: node scripts/release/bump.mjs <major.minor.patch>
 // @tags: [release]
 // @test: bump.test.mjs
-import { readFileSync, writeFileSync } from "node:fs"
+import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
+import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 import { checkDocs, syncDocs } from "./docs.mjs"
 
@@ -18,6 +19,24 @@ export function setVersion(text, version) {
   return next
 }
 
+/** Pure: every pinned `@razcue/agent-kit@x.y.z` command gets the new version. */
+export const pinCliVersion = (text, version) => text.replace(/@razcue\/agent-kit@\d+\.\d+\.\d+/g, `@razcue/agent-kit@${version}`)
+
+/** Re-pins the CLI commands written inside the plugin folder (skills, knowledge, README, scripts). */
+export function pinPluginCli(version, dir = "plugin") {
+  const walk = (d) => readdirSync(d).flatMap((f) => (statSync(join(d, f)).isDirectory() ? walk(join(d, f)) : [join(d, f)]))
+  const changed = []
+  for (const f of walk(dir).filter((p) => /\.(md|mjs|json)$/.test(p))) {
+    const text = readFileSync(f, "utf8")
+    const next = pinCliVersion(text, version)
+    if (next !== text) {
+      writeFileSync(f, next)
+      changed.push(f)
+    }
+  }
+  return changed
+}
+
 export const hasChangelogEntry = (changelog, version) => new RegExp(`^## ${version.replaceAll(".", "\\.")}\\b`, "m").test(changelog)
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
@@ -25,6 +44,8 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
     const [version] = process.argv.slice(2)
     for (const f of FILES) writeFileSync(f, setVersion(readFileSync(f, "utf8"), version))
     console.log(`version ${version} → ${FILES.join(", ")}`)
+    const pinned = pinPluginCli(version)
+    if (pinned.length) console.log(`CLI commands re-pinned → ${pinned.join(", ")}`)
     const pages = syncDocs()
     if (pages.length) console.log(`docs reference → ${pages.join(", ")}`)
     const stale = checkDocs().stale

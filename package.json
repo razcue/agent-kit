@@ -1,10 +1,31 @@
 {
   "name": "@razcue/agent-kit",
-  "version": "0.14.0",
+  "version": "0.14.1",
   "description": "Minimal agent-driven development kit for Claude Code: project setup CLI, Nuxt + Supabase monorepo scaffold, scoped knowledge and decisions.",
   "type": "module",
   "license": "MIT",
   "author": "razcue",
+  "homepage": "https://razcue.github.io/agent-kit/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/razcue/agent-kit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/razcue/agent-kit/issues"
+  },
+  "keywords": [
+    "claude-code",
+    "claude-code-plugin",
+    "agent",
+    "spec-driven-development",
+    "sdd",
+    "tdd",
+    "living-specs",
+    "ears",
+    "bdd",
+    "qa",
+    "cli"
+  ],
   "bin": {
     "agent-kit": "cli/index.mjs"
   },
