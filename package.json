@@ -1,6 +1,6 @@
 {
   "name": "@razcue/agent-kit",
-  "version": "0.14.1",
+  "version": "0.14.2",
   "description": "Minimal agent-driven development kit for Claude Code: project setup CLI, Nuxt + Supabase monorepo scaffold, scoped knowledge and decisions.",
   "type": "module",
   "license": "MIT",

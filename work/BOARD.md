@@ -10,3 +10,4 @@
 | [change 004-main-branch](changes/004-main-branch) — Detect the main (production) branch at setup | done | 5/5 | — |
 | [change 005-directory-listing](changes/005-directory-listing) — Ready the plugin for Anthropic's directory | done | 4/4 | — |
 | [change 006-channels](changes/006-channels) — Every channel points to the others | done | 4/4 | — |
+| [change 007-directory-validation](changes/007-directory-validation) — Clear the directory validator's warnings | done | 3/3 | — |

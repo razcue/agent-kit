@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.14.2 — 2026-10-11
+- **Directory validation warnings cleared**: a 1024 × 1024 listing icon (`plugin/.claude-plugin/icon.png`, the razcue.github.io terminal icon); a Privacy page in the docs (EN + ES) linked as `privacyPolicyUrl`; the read-only git subcommand data moved from `git-guard.mjs` to `git-rules.mjs`, so the guard no longer reads as a download-and-execute pattern. The plugin README states that the environment only reaches local tools (git, commitlint, the project's tests). Two reviewer holds remain by design: Node hook scripts in a subfolder plugin, and local tools receiving the environment while the plugin also has a remote MCP server.
+
 ## 0.14.1 — 2026-10-11
 - **Ready for Anthropic's plugin directory**: `plugin/README.md` (what each hook reads, runs and writes; no network, no data collected) and `plugin/LICENSE`; `plugin.json` gets `displayName`, `homepage`, `repository`, `license`, `keywords` and an up-to-date description (also in the marketplace entry).
 - **Every channel points to the others** — documentation (https://razcue.github.io/agent-kit/), docs MCP server (https://razcue-agent-kit.vercel.app/mcp), Claude Code plugin (`/plugin install agent-kit --marketplace razcue/agent-kit`) and npm CLI (`npx @razcue/agent-kit init`): one source of truth in `cli/lib/channels.mjs`; a "Channels" docs page (EN + ES); the plugin declares the MCP server as `agent-kit-docs` (`plugin/.mcp.json`; its README says what is sent: only the page path or locale); README, npm metadata (`homepage`, `bugs`, `keywords`), CLI help and `init` output name the docs and the MCP server; `llms.txt` names the MCP endpoint; the Pages root redirects to `/en/` or `/es/` by browser language (it returned 404).

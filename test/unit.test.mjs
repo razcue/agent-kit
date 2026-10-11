@@ -115,3 +115,4 @@ test("git-guard: aliases can't hide the real command", async () => {
   assert.match(verdict(expand("git pub")[0], "pr", PROT, () => "feat/x") ?? "", /never push to the main branch/)
   assert.match(v("git -c alias.x=commit x -m y", "trunk") ?? "", /Inline git aliases/)
 })
+

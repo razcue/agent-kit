@@ -9,7 +9,7 @@ A minimal harness for agent-driven development with Claude Code. It gives every 
 | Documentation | https://razcue.github.io/agent-kit/ (English and Spanish) | Read everything: installation, concepts, guides, reference |
 | Docs for agents (MCP) | https://razcue-agent-kit.vercel.app/mcp | This plugin declares it as `agent-kit-docs`, so Claude can look things up in the docs |
 | Claude Code plugin | `/plugin install agent-kit --marketplace razcue/agent-kit` | This plugin, from the repository's marketplace |
-| npm CLI | `npx @razcue/agent-kit@0.14.1 init my-project` | Sets up a project for the plugin |
+| npm CLI | `npx @razcue/agent-kit@0.14.2 init my-project` | Sets up a project for the plugin |
 
 The documentation also publishes `llms.txt` and `llms-full.txt`.
 
@@ -29,7 +29,7 @@ The hooks are silent in projects without an `agent-kit.json`.
 
 ## What it runs and sends
 
-Everything runs locally, except one remote MCP server. The plugin collects no data. When Claude calls the `agent-kit-docs` tools, the request goes to https://razcue-agent-kit.vercel.app/mcp (hosted on Vercel) and carries only the page path or the locale being looked up — never project files or conversation content. The scripts make no network requests; they read the project's files, run read-only `git` commands (`rev-parse`, `diff`, `status`, `log`, `for-each-ref`), and write only inside the project (`.agent-kit/`, `work/`, `.knowledge/`, `scripts/`). When the agent runs a project script or its tests through the script registry, it uses `node`, `bash`, or the project's own `tsx` / `vitest` — falling back to `npx --yes tsx@4.23.15` or `npx --yes vitest@5.0.3`, which download those exact versions from the npm registry.
+Everything runs locally, except one remote MCP server. The plugin collects no data. When Claude calls the `agent-kit-docs` tools, the request goes to https://razcue-agent-kit.vercel.app/mcp (hosted on Vercel) and carries only the page path or the locale being looked up — never project files or conversation content. The scripts pass your environment only to the local tools they start (git, commitlint, your project's tests); it never reaches the MCP server or any other service. The scripts make no network requests; they read the project's files, run read-only `git` commands (`rev-parse`, `diff`, `status`, `log`, `for-each-ref`), and write only inside the project (`.agent-kit/`, `work/`, `.knowledge/`, `scripts/`). When the agent runs a project script or its tests through the script registry, it uses `node`, `bash`, or the project's own `tsx` / `vitest` — falling back to `npx --yes tsx@4.23.15` or `npx --yes vitest@5.0.3`, which download those exact versions from the npm registry.
 
 ## Install
 
@@ -46,10 +46,14 @@ From your shell: `claude plugin install agent-kit --marketplace razcue/agent-kit
 The companion CLI asks a few fixed questions and writes `agent-kit.json`, a managed block in `AGENTS.md`, settings, knowledge and work folders:
 
 ```bash
-npx @razcue/agent-kit@0.14.1 init my-project
+npx @razcue/agent-kit@0.14.2 init my-project
 ```
 
 Then open Claude Code in the project. Without that file, the skills still load but the hooks stay silent.
+
+## Privacy
+
+No accounts, analytics or telemetry. Full policy: https://razcue.github.io/agent-kit/en/reference/privacy
 
 ## License
 
