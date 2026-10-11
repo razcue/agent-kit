@@ -12,8 +12,9 @@ reviewer agent, zero-dependency scripts, global knowledge) and scaffolds (`templ
 | `plugin/skills/` | one folder per skill; `SKILL.md` + optional `references/`, `templates/` |
 | `plugin/scripts/` | hooks and tools (`*.mjs`, Node built-ins only); shared by plugin and CLI |
 | `plugin/knowledge/` | global knowledge (stack, meta, ux) shipped with the plugin |
-| `templates/` | `base`, `monorepo`, `site`, `ci` scaffolds (`__NAME__`, `__LANG__`, `__MAIN__`) |
-| `scripts/` | kit maintenance: `release/bump.mjs`, `e2e/live.mjs`, `e2e/triggers.mjs` |
+| `templates/` | `base`, `monorepo`, `site`, `ci` scaffolds (`__NAME__`, `__LANG__`, `__MAIN__`); `skills/` = one stack skill per template, installed as a project skill |
+| `scripts/` | kit maintenance: `release/` (bump, site), `e2e/` (live, triggers, auth), `evolve/` (scout, ROUTINE.md, baseline) |
+| `work/proposals/` | inbox: proposals from projects (`agent-kit propose`) and scout reports |
 | `test/` | `node:test` suites, incl. plugin lint and site links |
 | `site/` | project website (EN + `es/`, plain HTML/CSS, `llms.txt`), GitHub Pages via `.github/workflows/pages.yml` |
 

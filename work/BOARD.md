@@ -4,4 +4,5 @@
 
 | Work | Status | Progress | Next |
 |---|---|---|---|
-| _none yet_ | | | |
+| [change 001-living-specs](specs/001-living-specs) — Living specs and standard notation (EARS + BDD/ATDD + ZOMBIES) | done | 15/15 | — |
+| [change 002-qa-artifacts](specs/002-qa-artifacts) — QA dimension: living checklist and test data | done | 10/10 | — |

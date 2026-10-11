@@ -1,8 +1,10 @@
 # agent-kit
 
-> A minimal harness for agent-driven development with Claude Code: an npx CLI that sets up a project from fixed questions, and a Claude Code plugin with 12 skills, 4 hooks (session context + resume, git-flow guard, stray-script reminder, end-of-turn checkpoint), zero-dependency scripts and scoped knowledge.
+> A minimal harness for agent-driven development with Claude Code: an npx CLI that sets up a project from fixed questions, and a Claude Code plugin with 11 skills, 4 hooks (session context + resume, git-flow guard, stray-script reminder, end-of-turn checkpoint), zero-dependency scripts and scoped knowledge.
 
-Install: `npx @razcue/agent-kit init <dir>` (questions: setup kind, technical level, reply language, method SDD or SDD + TDD, commit convention, git flow). Plugin: `/plugin marketplace add razcue/agent-kit` then `/plugin install agent-kit@agent-kit`.
+Install: `npx @razcue/agent-kit init <dir>` (questions: setup kind, technical level, reply language, method SDD or SDD + TDD, commit convention, git flow, QA checklist, Supabase test data). Plugin: `/plugin marketplace add razcue/agent-kit` then `/plugin install agent-kit@agent-kit`.
+
+Workflow: spec-anchored SDD — living specs per capability (`work/specs/<cap>/spec.md`) are the source of truth: EARS requirements with Given/When/Then scenarios tagged by ZOMBIES category; spec-lane changes (`work/changes/NNN-slug/`: proposal, delta specs, plan, tasks) merge into them; tests name the scenario id they prove; a QA checklist and Supabase seed/purge test data are derived from the living specs.
 
 ## Docs
 

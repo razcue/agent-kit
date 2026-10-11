@@ -10,7 +10,7 @@ Tools (scripts folder in the session context):
 - `node tdd.mjs run [test files]` — runs only the tests related to your changes (or the files given); prints exit code + failures, full log in `.agent-kit/runs/`. `--all` runs the suite.
 
 ## Loop — one behaviour at a time
-1. **List the cases** with ZOMBIES (global knowledge `zombies-testing`): write the test names first, simplest first, only the categories that apply.
+1. **List the cases**: the scenarios you are implementing first (each is an acceptance test, already tagged with its ZOMBIES category), then any extra unit cases with ZOMBIES (global knowledge `zombies-testing`). Write the test names first, simplest first, only the categories that apply.
 2. **Red** — write one test, run it, and confirm it fails **for the expected reason** (the assertion, not an import or typo). Note `red: <test> — <why it fails>`.
 3. **Green** — the smallest change that passes. Run again.
 4. **Refactor** only on green; run again.
@@ -26,6 +26,6 @@ Tools (scripts folder in the session context):
 ## Rules
 - Never weaken, skip or delete a test to reach green. If a test is wrong, say why, then fix it.
 - Test behaviour through public functions, with real domain values (money with 3 decimals, limits from DB constraints).
-- Test names read as rules: `rounds 0.0005 up to 0.001`, not `test1`. A test that proves a spec criterion starts with it: `004/AC-2 rejects a duplicate code`.
+- Test names read as rules: `rounds 0.0005 up to 0.001`, not `test1`. A test that proves a scenario starts with its id: `invoices.R3.S2 rejects a duplicate code` (older changes: `004/AC-2 …`).
 - Evidence for a task = test file + the `tdd.mjs run` result line.
 - Done when `tdd.mjs status` shows no `✗ no test` for logic you changed.

@@ -16,14 +16,16 @@ export function figures(root = ROOT) {
   return {
     version: JSON.parse(readFileSync(join(root, "package.json"), "utf8")).version,
     skills: readdirSync(join(root, "plugin", "skills")).length,
+    allSkills: readdirSync(join(root, "plugin", "skills")).length + readdirSync(join(root, "templates", "skills")).length,
   }
 }
 
 /** Pure: writes figures into `data-ak` spans (HTML) or "with N skills" (llms.txt). */
-export function syncText(text, { version, skills }) {
+export function syncText(text, { version, skills, allSkills = skills }) {
   return text
     .replace(/(data-ak="version">)[^<]*(<)/g, `$1${version}$2`)
     .replace(/(data-ak="skills">)[^<]*(<)/g, `$1${skills}$2`)
+    .replace(/(data-ak="all-skills">)[^<]*(<)/g, `$1${allSkills}$2`)
     .replace(/(plugin with )\d+( skills)/g, `$1${skills}$2`)
 }
 

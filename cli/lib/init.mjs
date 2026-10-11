@@ -9,10 +9,14 @@ import { writeIndexes } from "../../plugin/scripts/knowledge.mjs"
 import { writeIndex as writeScriptsIndex } from "../../plugin/scripts/scripts.mjs"
 import { createPrompter } from "./prompt.mjs"
 import { SUPABASE_REF, withSupabaseMcp } from "./lifecycle.mjs"
+import { syncQa } from "../../plugin/scripts/qa.mjs"
 
 const TEMPLATES = fileURLToPath(new URL("../../templates/", import.meta.url))
 export const KIT_VERSION = readJson(fileURLToPath(new URL("../../package.json", import.meta.url))).version
 const SCAFFOLDS = new Set(["monorepo", "site"])
+/** Stack → its conventions skill, installed as a project skill (.claude/skills/) only where it applies. */
+export const STACK_SKILLS = { "nuxt-supabase": "stack-nuxt-supabase", "nuxt-content-site": "stack-nuxt-content-site" }
+const SCAFFOLD_STACK = { monorepo: "nuxt-supabase", site: "nuxt-content-site" }
 
 // Visible strings of the site template, for Spanish projects.
 const SITE_ES = {
@@ -29,7 +33,13 @@ export const QUESTIONS = {
   kind: [
     { value: "monorepo", label: "New app monorepo", hint: "web + app + docs scaffold on Nuxt + Supabase" },
     { value: "site", label: "New content site", hint: "one simple Nuxt site with Markdown pages — easiest" },
-    { value: "existing", label: "Existing project", hint: "add the agent layer only" },
+    { value: "existing", label: "Existing project", hint: "add the agent layer to this folder's code" },
+    { value: "blank", label: "Blank project", hint: "agent layer only, no template — start from nothing" },
+  ],
+  stack: [
+    { value: "none", label: "None", hint: "no stack conventions skill" },
+    { value: "nuxt-supabase", label: "Nuxt + Supabase", hint: "stack-nuxt-supabase skill (pages, BFF routes, migrations, RPCs)" },
+    { value: "nuxt-content-site", label: "Nuxt Content site", hint: "stack-nuxt-content-site skill (Markdown pages, styling, build)" },
   ],
   apps: [
     { value: "web", label: "web", hint: "public website (Nuxt, prerendered)" },
@@ -46,7 +56,7 @@ export const QUESTIONS = {
   ],
   methodology: [
     { value: "sdd-tdd", label: "SDD + TDD", hint: "spec first, then tests before code; preflight blocks untested logic" },
-    { value: "sdd", label: "SDD", hint: "spec first; acceptance criteria verified by tests or checks" },
+    { value: "sdd", label: "SDD", hint: "spec first; every scenario verified by a test or a check" },
   ],
   commitConvention: [
     { value: "conventional", label: "Conventional Commits", hint: "type(scope): subject — checked by commitlint and a git hook" },
@@ -103,6 +113,21 @@ export const GIT_RULES = {
 }
 
 const valid = (key, value) => QUESTIONS[key].some((o) => o.value === value)
+
+/** Whether the project's database is Supabase (test-data scripts only apply there, for now). */
+export function usesSupabase(cfg, dir) {
+  if (cfg.kind === "monorepo") return cfg.apps.includes("app")
+  if (cfg.kind !== "existing") return false
+  if (cfg.stack === "nuxt-supabase" || existsSync(join(dir, "supabase"))) return true
+  const pkg = readJson(join(dir, "package.json")) ?? {}
+  return ["dependencies", "devDependencies"].some((k) => pkg[k]?.["@supabase/supabase-js"] || pkg[k]?.supabase)
+}
+
+const bool = (flag, value) => {
+  if (value === true || value === "true" || value === "yes") return true
+  if (value === "false" || value === "no") return false
+  throw new Error(`--${flag}: true or false`)
+}
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "") || "my-project"
 
 export function marketplaceSource(spec) {
@@ -134,13 +159,14 @@ export function agentsBlock(cfg) {
     "<!-- Managed by `npx @razcue/agent-kit init` — change agent-kit.json answers by re-running it. -->",
     "",
     `- Profile (\`agent-kit.json\`): ${cfg.technicalLevel}, replies in ${cfg.language === "es" ? "Spanish" : "English"}, method \`${cfg.methodology}\`${cfg.methodology === "sdd-tdd" ? " (tests first: `tdd` skill)" : ""}, git flow \`${cfg.gitFlow}\` (enforced by a hook).`,
-    "- Lanes: **Answer** (read-only) · **Fast-track** (`feature` skill: ≤3 files, no schema/permission/money change) · **Spec** (`spec` skill: everything else, spec approved before code). Work files in `work/`.",
+    "- Lanes: **Answer** (read-only) · **Fast-track** (`feature` skill: ≤3 files, no schema/permission/money change) · **Spec** (`spec` skill: everything else, approved before code). Work files in `work/` (map: `work/README.md`).",
+    "- Specs: living specs `work/specs/<capability>/spec.md` are the source of truth (EARS + Given/When/Then + ZOMBIES); spec-lane changes merge into them.",
     "- Knowledge: `.knowledge/<scope>/` (business, env, decisions, ux, stack; `local/` is private) plus global stack/meta/ux from agent-kit. Only summaries load at session start; open entries on demand. Record facts with `knowledge`, decisions with `decide`. Don't restate knowledge in this file.",
     "- Scripts: search before writing, document every kept one (`scripts` skill). Kept: `scripts/<area>/` (index in `scripts/README.md`); throwaway: `.agent-kit/scratch/` (gitignored).",
     ...(cfg.commitConvention === "conventional"
       ? ["- Commits: Conventional Commits (`type(scope): subject`, English, ≤ 72 chars), checked by commitlint — write them with the `commit` skill."]
       : []),
-    "- Resume: each session starts with the last checkpoint and the active work (`work/`); acceptance criteria are traced to tests (`NNN/AC-n` in the test name).",
+    "- Resume: each session starts with the last checkpoint and the active work (`work/`); scenarios are traced to tests (the scenario id starts the test name).",
     "- Before a merge: `preflight` skill. Now and then: `retro` skill to turn repeated corrections into rules.",
     BLOCK_END,
   ].join("\n")
@@ -243,17 +269,17 @@ class Writer {
     if (!exists) this.created.add(rel)
     this.log.push(`${exists ? "update" : "create"}  ${rel}`)
   }
-  copyTree(srcDir, destRel, { skip = () => false, vars = {} } = {}) {
+  copyTree(srcDir, destRel, { skip = () => false, vars = {}, overwrite = false } = {}) {
     for (const entry of readdirSync(srcDir, { withFileTypes: true })) {
       const src = join(srcDir, entry.name)
       const target = entry.name.replace(/^_gitignore$/, ".gitignore").replace(/^_knowledge$/, ".knowledge")
       const rel = destRel ? `${destRel}/${target}` : target
       if (skip(rel)) continue
-      if (entry.isDirectory()) this.copyTree(src, rel, { skip, vars })
+      if (entry.isDirectory()) this.copyTree(src, rel, { skip, vars, overwrite })
       else {
         let text = readFileSync(src, "utf8")
         for (const [k, v] of Object.entries(vars)) text = text.replaceAll(k, v)
-        this.write(rel, text, { overwrite: false })
+        this.write(rel, text, { overwrite })
       }
     }
   }
@@ -265,7 +291,7 @@ function parseFlags(flags) {
     if (!/^[a-z0-9][a-z0-9-]*$/.test(flags.name)) throw new Error("--name: lowercase letters, digits and - only")
     out.name = flags.name
   }
-  for (const key of ["kind", "technicalLevel", "language", "methodology", "commitConvention", "gitFlow"]) {
+  for (const key of ["kind", "stack", "technicalLevel", "language", "methodology", "commitConvention", "gitFlow"]) {
     const flag = { technicalLevel: "level", language: "lang", methodology: "method", commitConvention: "commits", gitFlow: "git" }[key] ?? key
     if (flags[flag] === undefined) continue
     if (!valid(key, flags[flag]))
@@ -277,6 +303,13 @@ function parseFlags(flags) {
     for (const a of out.apps) if (!valid("apps", a)) throw new Error(`--apps: choose from web, app, docs`)
   }
   if (flags.main) out.mainBranch = flags.main
+  if (flags["qa-checklist"] !== undefined) out.qaChecklist = bool("qa-checklist", flags["qa-checklist"])
+  if (flags["test-data"] !== undefined) out.testData = bool("test-data", flags["test-data"])
+  if (flags["test-prefix"] !== undefined) {
+    if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(flags["test-prefix"])) throw new Error("--test-prefix: letters, digits and _ (e.g. TEST_)")
+    out.testPrefix = flags["test-prefix"]
+  }
+  if (flags["test-data-dir"] !== undefined) out.testDataDir = String(flags["test-data-dir"]).replace(/\/+$/, "")
   if (flags["supabase-mcp"]) {
     if (!SUPABASE_REF.test(flags["supabase-mcp"])) throw new Error("--supabase-mcp: the 20-character project ref")
     out.supabaseMcp = flags["supabase-mcp"]
@@ -339,11 +372,27 @@ export async function init(target, flags) {
     // Thin route handlers are not unit-tested; their logic lives in packages/shared or RPCs.
     cfg.testIgnore = previous?.testIgnore ?? (cfg.kind === "monorepo" ? ["apps/*/server/api/"] : [])
     cfg.stack =
-      previous?.stack ?? { monorepo: "nuxt-supabase", site: "nuxt-content-site" }[cfg.kind] ?? "other"
+      SCAFFOLD_STACK[cfg.kind] ??
+      given.stack ??
+      (previous?.stack && previous.stack !== "other" ? previous.stack : undefined) ??
+      (p && !previous ? await p.select("Stack conventions skill", QUESTIONS.stack, "none") : "none")
+    const supabaseDb = usesSupabase(cfg, dir)
+    const prevQa = previous?.qa
+    const checklist =
+      given.qaChecklist ?? (p ? await p.confirm("QA checklist generated from the living specs (work/qa/)?", prevQa?.checklist ?? true) : prevQa?.checklist ?? true)
+    const testData =
+      supabaseDb &&
+      (given.testData ?? (p ? await p.confirm("Supabase test data scripts (seed / purge in supabase/test-data/)?", prevQa?.testData ?? true) : prevQa?.testData ?? true))
+    cfg.qa = {
+      checklist,
+      testData,
+      testPrefix: given.testPrefix ?? prevQa?.testPrefix ?? "TEST_",
+      testDataDir: given.testDataDir ?? prevQa?.testDataDir ?? "supabase/test-data",
+    }
     cfg.kitVersion = KIT_VERSION
-    const usesSupabase = cfg.kind === "monorepo" ? cfg.apps.includes("app") : cfg.kind === "existing"
+    const offerMcp = cfg.kind === "monorepo" ? cfg.apps.includes("app") : cfg.kind === "existing"
     cfg.supabaseMcp = given.supabaseMcp ?? previous?.supabaseMcp
-    if (!cfg.supabaseMcp && p && !previous && usesSupabase) {
+    if (!cfg.supabaseMcp && p && !previous && offerMcp) {
       const ref = (await p.text("Supabase project ref for a read-only MCP server (Enter to skip)", "")) ?? ""
       if (ref && !SUPABASE_REF.test(ref)) throw new Error("Supabase project ref: the 20-character id in the dashboard URL")
       cfg.supabaseMcp = ref || undefined
@@ -351,9 +400,10 @@ export async function init(target, flags) {
 
     console.log(`\nPlan for ${dir}`)
     console.log(
-      `  ${scaffold ? (cfg.kind === "site" ? "scaffold content site" : `scaffold monorepo: ${cfg.apps.join(", ")}`) : "agent layer only"}`,
+      `  ${scaffold ? (cfg.kind === "site" ? "scaffold content site" : `scaffold monorepo: ${cfg.apps.join(", ")}`) : cfg.kind === "blank" ? "agent layer only (blank project)" : "agent layer only"}${STACK_SKILLS[cfg.stack] ? ` + ${STACK_SKILLS[cfg.stack]} skill` : ""}`,
     )
     console.log(`  profile: ${cfg.technicalLevel}, ${cfg.language}, ${cfg.methodology}, commits ${cfg.commitConvention}, git ${cfg.gitFlow} (main branch: ${cfg.mainBranch})`)
+    console.log(`  qa: checklist ${cfg.qa.checklist ? "on" : "off"}, test data ${cfg.qa.testData ? `on (${cfg.qa.testDataDir}, prefix ${cfg.qa.testPrefix})` : "off"}`)
     console.log(`  plugin: agent-kit@agent-kit from ${marketplaceSpec}\n`)
     if (p && !(await p.confirm("Write these files?"))) return 1
 
@@ -380,9 +430,30 @@ export async function init(target, flags) {
       vars,
       skip: (rel) => rel === "AGENTS.md",
     })
+    // Kit-owned map of work/: refreshed so upgrades describe the current layout.
+    w.write("work/README.md", readFileSync(join(TEMPLATES, "base", "work", "README.md"), "utf8"))
+    // QA: the checklist folder (generated files are written after agent-kit.json) and the
+    // test-data skeleton — never overwritten: the fixtures are the project's own.
+    if (cfg.qa.checklist) {
+      w.write("work/qa/README.md", readFileSync(join(TEMPLATES, "qa", "work-qa", "README.md"), "utf8"))
+      w.write("work/qa/runs/.gitkeep", "", { overwrite: false })
+    }
+    if (cfg.qa.testData)
+      w.copyTree(join(TEMPLATES, "qa", "supabase-test-data"), cfg.qa.testDataDir, {
+        vars: { ...vars, __PREFIX__: cfg.qa.testPrefix, __DIR__: cfg.qa.testDataDir },
+      })
     for (const scope of PROJECT_SCOPES) w.write(`.knowledge/${scope}/.gitkeep`, "", { overwrite: false })
 
+    // The stack's conventions skill, managed by the kit: refreshed on every init/upgrade.
+    const stackSkill = STACK_SKILLS[cfg.stack]
+    if (stackSkill) w.copyTree(join(TEMPLATES, "skills", stackSkill), `.claude/skills/${stackSkill}`, { overwrite: true })
+
+    // A blank project gets a minimal package.json so tests and commit checks have a home.
+    if (cfg.kind === "blank" && !existsSync(join(dir, "package.json")))
+      w.write("package.json", `${JSON.stringify({ name: cfg.name, version: "0.0.0", private: true, type: "module", scripts: { test: "node --test" } }, null, 2)}\n`)
+
     w.write(PROJECT_FILE, `${JSON.stringify(cfg, null, 2)}\n`)
+    if (cfg.qa.checklist) for (const f of syncQa(dir).written) w.log.push(`qa      ${f}`)
 
     const agentsPath = join(dir, "AGENTS.md")
     const block = agentsBlock(cfg)

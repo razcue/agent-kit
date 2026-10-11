@@ -9,6 +9,7 @@ import { STATE_DIR, compareVersions, findProjectDir, globalKnowledge, hookLog, p
 import { collect } from "./knowledge.mjs"
 import { collectScripts } from "./scripts.mjs"
 import { ACTIVE, collectWork } from "./work.mjs"
+import { livingSpecs, parseSpec } from "./specs.mjs"
 
 // Claude Code caps a hook's additionalContext at 10,000 characters; stay under it.
 export const CONTEXT_LIMIT = 9_500
@@ -86,6 +87,23 @@ export function resumeSection(dir, now = Date.now()) {
   return out.length ? ["## Resume", ...out, "If the user's request continues this work, pick up from the next task.", ""] : []
 }
 
+/** One line naming the living specs (never their content), or null when there are none. */
+export function specsSummary(dir, max = 15) {
+  const specs = livingSpecs(dir).map((s) => `${s.cap} (${parseSpec(s.text).requirements.length})`)
+  if (!specs.length) return null
+  const list = specs.length > max ? `${specs.slice(0, max).join(", ")}, … ${specs.length - max} more` : specs.join(", ")
+  return `Living specs (requirements): ${list}.`
+}
+
+/** One line describing the project's QA setup (checklist, test data), or null when both are off. */
+export function qaLine(qa) {
+  if (!qa || (!qa.checklist && !qa.testData)) return null
+  const parts = []
+  if (qa.checklist) parts.push("checklist `work/qa/` (`qa.mjs sync`)")
+  if (qa.testData) parts.push(`test data \`${qa.testDataDir ?? "supabase/test-data"}/\` (prefix \`${qa.testPrefix ?? "TEST_"}\`, @fixture tags; stack skill references/test-data.md)`)
+  return `QA: ${parts.join("; ")}.`
+}
+
 const VOICE = {
   technical: "The user is an experienced web developer: be concise and technical.",
   "non-technical": [
@@ -104,7 +122,7 @@ const LANGUAGE = {
 const METHOD = {
   "sdd-tdd":
     "Method: SDD + TDD — tests first (`tdd` skill): a failing test before each behaviour change, done only when it passes; preflight blocks changed logic without a test.",
-  sdd: "Method: SDD — verify every acceptance criterion with a test or a reproducible check; tests are written where logic warrants them.",
+  sdd: "Method: SDD — verify every scenario with a test or a reproducible check; tests are written where logic warrants them.",
 }
 
 const GIT = {
@@ -135,7 +153,9 @@ function main() {
     "Work lanes — name the lane before starting:",
     "- Answer: questions and exploration, read-only.",
     "- Fast-track (`feature` skill): ≤3 files and no schema, permission or money change.",
-    "- Spec (`spec` skill): anything bigger or riskier; the user approves the spec before code.",
+    "- Spec (`spec` skill): anything bigger or riskier; the user approves the change (proposal + delta specs) before code.",
+    "Living specs (`work/specs/`) are the source of truth; notation and tools in the `spec` skill.",
+    ...[specsSummary(dir), qaLine(project.qa)].filter(Boolean),
     "",
   ]
 

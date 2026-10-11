@@ -9,7 +9,7 @@ shadcn-vue + Supabase monorepo (website, app, docs).
 agent-kit/
 ├── .claude-plugin/marketplace.json   this repo is a plugin marketplace
 ├── plugin/                           the Claude Code plugin (versioned)
-│   ├── skills/        start · adopt · spec · feature · tdd · scripts · knowledge · decide · retro · commit · stack-nuxt-supabase · preflight
+│   ├── skills/        start · adopt · spec · feature · tdd · scripts · knowledge · decide · retro · commit · preflight
 │   ├── agents/        reviewer (read-only)
 │   ├── hooks/         SessionStart → profile, resume, knowledge + script index · PreToolUse(Bash) → git guard
 │   │                  PostToolUse(Write) → stray-script reminder · Stop → checkpoint
@@ -28,7 +28,7 @@ agent-kit/
 
 ```bash
 # new project (asks: name, setup [app monorepo | content site | existing], apps, technical level,
-# language, method SDD / SDD + TDD, git flow)
+# language, method SDD / SDD + TDD, git flow, QA checklist, Supabase test data)
 npx @razcue/agent-kit init my-project
 
 # existing repo: adds the agent layer only (keeps your AGENTS.md, appends a managed block)
@@ -41,11 +41,13 @@ npx @razcue/agent-kit init --git read-only --yes
 npx @razcue/agent-kit doctor [--fix]    # --fix regenerates indexes, knowledge log and work board
 npx @razcue/agent-kit context            # + skills Claude Code can't see
 npx @razcue/agent-kit usage --days 30
-npx @razcue/agent-kit work status|board|trace [spec] | new feature|spec <slug>
+npx @razcue/agent-kit work status|board|trace [NNN] | new feature|change <slug>
+npx @razcue/agent-kit specs lint|next <cap>|merge <NNN>|trace [NNN|cap]|list   # living specs
+npx @razcue/agent-kit qa sync|run|status|gaps                                    # QA checklist + runs
 npx @razcue/agent-kit preflight [base]
 ```
 
-Non-interactive: `--name --kind monorepo|site|existing --apps web,app,docs --level technical|non-technical --lang en|es --method sdd-tdd|sdd --commits conventional|none --git pr|trunk|read-only --main <branch> --marketplace github:<owner/repo>|<path> --yes`.
+Non-interactive: `--name --kind monorepo|site|existing|blank --stack none|nuxt-supabase|nuxt-content-site --apps web,app,docs --level technical|non-technical --lang en|es --method sdd-tdd|sdd --commits conventional|none --git pr|trunk|read-only --main <branch> --marketplace github:<owner/repo>|<path> --qa-checklist true|false --test-data true|false --test-prefix TEST_ --test-data-dir supabase/test-data --yes`.
 
 Then open `claude` in the project and trust the folder: `.claude/settings.json`
 declares this marketplace and enables `agent-kit@agent-kit`, so Claude Code offers
@@ -60,7 +62,7 @@ to install it. Manual: `/plugin marketplace add razcue/agent-kit` →
 | `AGENTS.md` (+ `CLAUDE.md` → `@AGENTS.md`) | Short project rules + a managed agent-kit block. Keep it ≤ 300 lines. |
 | `.claude/settings.json` | Plugin enabled + git permission rules for the chosen flow (merged, your rules kept). |
 | `.knowledge/` | Project knowledge: `business`, `env`, `decisions`, `ux`, `stack`, `local` (gitignored). |
-| `work/` | `features/` (fast-track) and `specs/` (spec-driven) work files. |
+| `work/` | `specs/<capability>/` living specs (source of truth), `changes/NNN-slug/` spec-lane changes, `features/` fast-track, `qa/` checklist + QA runs. |
 | `scripts/` | Kept, documented scripts; `README.md` index is generated. |
 | `.agent-kit/` | Gitignored: `scratch/` throwaway scripts (still searchable), `runs/` full logs. |
 
@@ -72,9 +74,26 @@ to install it. Manual: `/plugin marketplace add razcue/agent-kit` →
   every git write, `pr` blocks commits/pushes on main, all flows block force-push,
   `reset --hard`, `clean -f`, `branch -D`.
 - **Three lanes.** Answer (read-only) · Fast-track (`feature`: ≤3 files, no
-  schema/permission/money change) · Spec (`spec`: spec → user approval → test-first
-  tasks → every acceptance criterion verified → `preflight` → `reviewer`).
-- **Two methods.** `sdd`: every acceptance criterion proven by a test or a reproducible
+  schema/permission/money change; a behaviour change edits its living spec) · Spec
+  (`spec`: a change — proposal + delta specs → user approval → test-first tasks → every
+  scenario verified → `preflight` → `reviewer` → merged into the living specs).
+- **Spec-anchored SDD, one notation.** Living specs in `work/specs/<capability>/spec.md`
+  say how the system behaves now: requirements in **EARS** (`When <trigger>, the <system>
+  shall …`, id `cap.R1`), each with **Given/When/Then** scenarios (BDD) that are the
+  acceptance tests (ATDD), each tagged with the **ZOMBIES** category it covers
+  (`cap.R1.S1 … @boundary`). A change carries delta specs (ADDED / MODIFIED / REMOVED);
+  `specs.mjs merge` applies them all or nothing and retires removed ids (never reused).
+  `specs.mjs lint` checks the notation, `next` hands out ids.
+- **QA that evolves with the specs** (configurable, on by default). `work/qa/checklist.md`
+  is generated from the living specs — one item per scenario, with its steps and the
+  test-data fixture behind it — plus an offline `checklist.html`; QA passes are dated run
+  files (`qa.mjs run`), and `qa.mjs status` shows **re-check** for scenarios that changed
+  after passing. On Supabase projects, `supabase/test-data/` holds `seed.sql` / `purge.sql`
+  (one transaction, through the app's RPCs, rows marked `TEST_`, fixtures tagged per
+  scenario with ZOMBIES) guarded by an `_env` table in every environment: they refuse to run
+  unless it says dev / test / staging. Applied in the SQL Editor, or by a CLI / psql
+  command the agent shows and you approve; preflight warns when migrations change without them.
+- **Two methods.** `sdd`: every scenario proven by a test or a reproducible
   check. `sdd-tdd`: tests first (`tdd` skill: red → green → refactor, cases chosen with
   ZOMBIES); `tdd.mjs status` shows changed logic without tests, `tdd.mjs run` runs only
   the related tests, and `preflight` blocks untested logic (paths in `testIgnore` excepted).
@@ -86,13 +105,15 @@ to install it. Manual: `/plugin marketplace add razcue/agent-kit` →
 - **Sessions resume.** A Stop hook saves `.agent-kit/checkpoint.json` after every turn
   (branch, uncommitted files, active work); the next session starts with "where we left
   off" and each active work file's next task.
-- **Every acceptance criterion is traced.** Tests that prove one name it `NNN/AC-n`
-  (spec number); criteria proven otherwise get a ✅ row in `tasks.md`. `work.mjs trace`
-  shows gaps; preflight blocks a `done` spec with any.
+- **Every scenario is traced.** A test that proves one starts its name with the scenario
+  id (`it("auth.R2.S2 …")`); scenarios proven otherwise get a ✅ row in the change's
+  `tasks.md`. `specs.mjs trace` / `work.mjs trace` show gaps; preflight blocks a `done`
+  change with any, or one not merged into the living specs. Projects from ≤ 0.12:
+  `upgrade` moves `work/specs/NNN-*` to `work/changes/`, and their `NNN/AC-n` traces keep working.
 - **Context has a budget.** `agent-kit context` measures what loads every session and
   `doctor` fails above `contextBudget` (default 8000 tokens).
 - **Non-technical users** get the `site` scaffold, plain-language voice and the `start`
-  skill: plain questions → first spec in their words → build, with "how to see it" after
+  skill: plain questions → first change in their words → build, with "how to see it" after
   each change.
 - **The setup learns.** The `retro` skill turns repeated corrections into knowledge, hook
   rules or promoted scripts, using `agent-kit usage` and `context` as evidence.
@@ -174,18 +195,19 @@ after each move.
 Set `AGENT_KIT_HOOK_LOG=/tmp/agent-kit-hooks.log` before starting `claude`: every
 agent-kit hook appends one line (event, path or command) when it runs.
 
-## Keep the kit evolving (weekly routine)
+## How the kit improves
 
-Run `/schedule` in Claude Code and create a weekly cloud routine on this repo with:
-
-> Read the Claude Code changelog and docs changes since the last run (hooks, skills,
-> plugins, settings) and the latest posts on agent-driven development. Compare with this
-> repo (plugin/, cli/, templates/). Propose at most 5 concrete changes as a markdown
-> list in `work/features/NNN-kit-update.md` (status: in-progress), each with the source
-> link, the file to change and why it lowers tokens or improves reliability. Don't edit
-> code.
-
-Then review the proposals in a normal session (`feature` or `spec` lane).
+- **From projects**: a retro (or anyone) runs `agent-kit propose "<title>" --kind …`;
+  the proposal lands in this repo's `work/proposals/` (when the clone is configured
+  with `agent-kit setup`) or becomes a ready `gh issue create` command. Global
+  knowledge written from projects lands directly in `plugin/knowledge/` of the clone.
+- **From the ecosystem**: `node scripts/evolve/scout.mjs` compares a reviewed baseline
+  with new Claude Code versions, new hook events and template dependencies a major
+  behind; the weekly routine in [`scripts/evolve/ROUTINE.md`](scripts/evolve/ROUTINE.md)
+  adds web research on new skills, harnesses and workflows and writes proposals.
+- **Back to projects**: accepted proposals ship as a release; projects get the plugin
+  part with `/plugin marketplace update agent-kit` and the project files (stack skills,
+  managed blocks, new questions) with `npx @razcue/agent-kit upgrade`.
 
 ## Develop the kit
 

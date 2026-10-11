@@ -27,7 +27,7 @@ Refs: #123                                        ← optional
 - **type**: `feat` new behaviour · `fix` bug fix · `refactor` no behaviour change · `perf` · `test` · `docs` · `style` (formatting) · `build` (deps, packaging) · `ci` · `chore` · `revert`.
 - **scope**: the area (`app`, `shared`, `ui`, `db`, `docs`, `scripts`…, as `commit.mjs draft` suggests); omit it when the change spans the project.
 - **subject**: English, imperative, lower-case start, no final period, header ≤ 72 characters — `add invoice export`, not `Added invoice export.`
-- **body**: only when the why isn't obvious from the subject; concise. Reference the spec when there is one (`Spec: work/specs/004-…`).
+- **body**: only when the why isn't obvious from the subject; concise. Reference the change when there is one (`Change: work/changes/004-…`).
 - Add the trailers your session instructions require (e.g. `Co-Authored-By`).
 
 ## 4. Validate

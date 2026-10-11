@@ -12,7 +12,8 @@ import { fileURLToPath, pathToFileURL } from "node:url"
 
 const KIT = fileURLToPath(new URL("../../", import.meta.url))
 
-/** One prompt per skill: what a user would really type. */
+/** One prompt per skill: what a user would really type. Optional third value: the project
+ * kind to run in ("monorepo" by default; stack skills only exist in their template's projects). */
 export const CASES = [
   ["start", "I want to build a small website for my bakery. Help me get started."],
   ["adopt", "Our AGENTS.md is huge and every session burns tokens loading it. Slim it down for agent-kit."],
@@ -26,6 +27,7 @@ export const CASES = [
   ["commit", "Commit my changes with a proper message."],
   ["preflight", "What do I need to do before merging this branch to production?"],
   ["stack-nuxt-supabase", "Add a server route in apps/app that lists invoices from Supabase."],
+  ["stack-nuxt-content-site", "Add a contact page to the site with our phone number and a short text.", "site"],
 ]
 
 /** Requests where no agent-kit skill should load (over-triggering wastes context). */
@@ -71,19 +73,21 @@ function main(argv) {
   const model = argv.includes("--model") ? argv[argv.indexOf("--model") + 1] : "haiku"
   const only = argv.includes("--only") ? argv[argv.indexOf("--only") + 1].split(",") : null
   const dir = mkdtempSync(join(tmpdir(), "agent-kit-triggers-"))
-  // A scaffolded app monorepo (files only, no install), so prompts about pages and routes are real.
-  spawnSync("node", [join(KIT, "cli/index.mjs"), "init", dir, "--yes", "--name", "triggers", "--apps", "web,app", "--git", "read-only"], { encoding: "utf8" })
+  // Scaffolded projects (files only, no install), so prompts about pages and routes are real.
+  const projects = { monorepo: join(dir, "monorepo"), site: join(dir, "site") }
+  spawnSync("node", [join(KIT, "cli/index.mjs"), "init", projects.monorepo, "--yes", "--name", "triggers", "--apps", "web,app", "--git", "read-only"], { encoding: "utf8" })
+  spawnSync("node", [join(KIT, "cli/index.mjs"), "init", projects.site, "--yes", "--kind", "site", "--name", "triggers-site", "--git", "read-only"], { encoding: "utf8" })
   let hits = 0
-  const cases = [...CASES.filter(([s]) => !only || only.includes(s)), ...(only && !only.includes("none") ? [] : NEGATIVE.map((p) => [null, p]))]
+  const cases = [...CASES.filter(([s]) => !only || only.includes(s)), ...(only && !only.includes("none") ? [] : NEGATIVE.map((p) => [null, p, "monorepo"]))]
   const ours = new Set(CASES.map(([s]) => s))
-  for (const [skill, prompt] of cases) {
+  for (const [skill, prompt, kind = "monorepo"] of cases) {
     const r = spawnSync(
       "claude",
       // Read-only exploration allowed, as in a real session; the skill counts if it is
       // loaded at any point within 5 turns.
       ["-p", prompt, "--plugin-dir", join(KIT, "plugin"), "--model", model, "--output-format", "stream-json", "--verbose", "--max-turns", "5",
         "--allowedTools", "Skill", "Read", "Glob", "Grep", "Bash(ls:*)", "Bash(cat:*)"],
-      { cwd: dir, input: "", encoding: "utf8", timeout: 180_000, env: { ...process.env, AGENT_KIT_HOME: KIT } },
+      { cwd: projects[kind], input: "", encoding: "utf8", timeout: 180_000, env: { ...process.env, AGENT_KIT_HOME: KIT } },
     )
     const lines = (r.stdout ?? "").split("\n")
     const used = skillsUsed(lines)

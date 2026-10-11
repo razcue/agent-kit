@@ -17,6 +17,7 @@
     <a class="brand" href="#top">agent<span>-kit</span></a>
     <div class="links">
       <a class="opt" href="#how">How it works</a>
+      <a class="opt" href="#specs">Specs &amp; QA</a>
       <a href="#skills">Skills</a>
       <a class="opt" href="#guardrails">Guardrails</a>
       <a class="opt" href="#knowledge">Knowledge</a>
@@ -30,7 +31,7 @@
 <main id="top">
   <section class="hero">
     <div class="wrap">
-      <span class="kicker">For Claude Code · plugin + CLI · MIT · v<span data-ak="version">0.11.0</span></span>
+      <span class="kicker">For Claude Code · plugin + CLI · MIT · v<span data-ak="version">0.13.0</span></span>
       <h1>Answer a few questions.<br>Get a project your agent understands.</h1>
       <p class="lead">agent-kit sets up a project for agent-driven development: the rules are enforced by hooks instead of prose, the context loaded every session stays small, work resumes where it stopped, and every spec is traced to tests.</p>
       <div class="cta">
@@ -62,7 +63,7 @@
     <div class="wrap">
       <h2>How it works</h2>
       <div class="grid">
-        <div class="card"><div class="num">1</div><h3>Answer fixed questions</h3><p>Setup (app monorepo, content site or existing project), technical level, reply language, method (SDD or SDD + TDD), commit convention, git flow. Nothing is inferred.</p></div>
+        <div class="card"><div class="num">1</div><h3>Answer fixed questions</h3><p>Setup (app monorepo, content site, existing or blank project), technical level, reply language, method (SDD or SDD + TDD), commit convention, git flow. Nothing is inferred.</p></div>
         <div class="card"><div class="num">2</div><h3>Get the agent layer</h3><p>A short AGENTS.md block, <code>agent-kit.json</code>, enforced settings, <code>.knowledge/</code>, <code>work/</code>, <code>scripts/</code> — and the plugin, enabled from its marketplace.</p></div>
         <div class="card"><div class="num">3</div><h3>Every session starts right</h3><p>A hook injects the profile, where the last session stopped, the active work with its next task, and a one-line-per-entry knowledge index — about 1.3k tokens.</p></div>
       </div>
@@ -90,23 +91,47 @@
       <p class="lead">The agent names the lane before it starts, so you can redirect early. The method you chose decides how much proof each change needs.</p>
       <div class="grid">
         <div class="card"><h3>Answer</h3><p>Questions and exploration. Read-only.</p></div>
-        <div class="card"><h3>Fast-track</h3><p>Small changes (≤ 3 files, no schema, permission or money change). One feature file with tasks and evidence.</p></div>
-        <div class="card"><h3>Spec</h3><p>Everything else: spec → your approval → plan → tasks → implement → verify every acceptance criterion.</p></div>
+        <div class="card"><h3>Fast-track</h3><p>Small changes (≤ 3 files, no schema, permission or money change). One feature file with tasks and evidence; a behaviour change also updates its living spec.</p></div>
+        <div class="card"><h3>Spec</h3><p>Everything else, as a change: proposal + delta specs → your approval → plan → tasks → implement → verify every scenario → merge into the living specs.</p></div>
       </div>
       <div class="table-wrap">
         <table>
           <tr><th>Method</th><th>What it requires</th></tr>
-          <tr><td><b>SDD</b></td><td>Each acceptance criterion is proven by a test or a reproducible check.</td></tr>
-          <tr><td><b>SDD + TDD</b></td><td>A failing test before every behaviour change (red → green → refactor, cases chosen with ZOMBIES). Tests name the criterion they prove (<code>004/AC-2</code>); preflight blocks untested logic and finished specs with unproven criteria.</td></tr>
+          <tr><td><b>SDD</b></td><td>Each scenario is proven by a test or a reproducible check.</td></tr>
+          <tr><td><b>SDD + TDD</b></td><td>A failing test before every behaviour change (red → green → refactor, cases chosen with ZOMBIES). Tests start with the scenario they prove (<code>auth.R2.S2</code>); preflight blocks untested logic and finished changes with unproven or unmerged scenarios.</td></tr>
         </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="specs">
+    <div class="wrap">
+      <h2>Living specs, one notation, QA that follows</h2>
+      <p class="lead">Spec-anchored SDD: the living specs in <code>work/specs/&lt;capability&gt;/</code> say how the system behaves now. Each change carries a delta that merges into them, and every step uses one standard notation.</p>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Step</th><th>Standard</th><th>Looks like</th></tr>
+          <tr><td>Why and scope</td><td>Proposal</td><td><code>work/changes/004-invoices/proposal.md</code></td></tr>
+          <tr><td>Requirement</td><td>EARS</td><td><code>### invoices.R2</code> When an invoice is saved, the BFF shall round its total to 3 decimals.</td></tr>
+          <tr><td>Acceptance</td><td>BDD / ATDD (Given / When / Then)</td><td><code>#### invoices.R2.S3 — Rounding edge @boundary</code></td></tr>
+          <tr><td>Choosing cases</td><td>ZOMBIES</td><td>one tag per scenario: zero · one · many · boundary · interface · exception · simple</td></tr>
+          <tr><td>Tests</td><td>Traceability</td><td><code>it("invoices.R2.S3 rounds 0.0005 up")</code> — <code>specs.mjs trace</code> lists gaps</td></tr>
+          <tr><td>Test data</td><td>ZOMBIES on data</td><td><code>-- @fixture invoices.R2.S3 @boundary</code> in <code>supabase/test-data/seed.sql</code></td></tr>
+          <tr><td>QA</td><td>Checklist + runs</td><td><code>work/qa/checklist.md</code> (one item per scenario), dated runs, <b>re-check</b> when a scenario changes</td></tr>
+        </table>
+      </div>
+      <div class="grid">
+        <div class="card"><h3>Deltas, merged by a script</h3><p>A change ADDs, MODIFIEs or REMOVEs requirements. <code>specs.mjs merge</code> applies them all or nothing and retires removed ids, which are never reused, so tests, QA runs and fixtures always point to the right behaviour.</p></div>
+        <div class="card"><h3>QA checklist</h3><p>Generated from the living specs, never edited by hand: the steps, the ZOMBIES tag and the fixture behind each scenario. An offline page records pass / fail / blocked and exports a run file.</p></div>
+        <div class="card"><h3>Test data that can't hit production</h3><p>Supabase projects get <code>seed.sql</code> and <code>purge.sql</code>: one transaction each, created through the app's RPCs, rows marked <code>TEST_</code>. Both refuse to run unless the <code>_env</code> table says dev, test or staging. Optional at setup.</p></div>
       </div>
     </div>
   </section>
 
   <section id="skills">
     <div class="wrap">
-      <h2><span data-ak="skills">12</span> skills, loaded only when needed</h2>
-      <p class="lead">Each skill's description is all that loads until the task needs it. Descriptions are tested: every skill triggers on a realistic request, and none load on unrelated questions — on haiku and on sonnet.</p>
+      <h2><span data-ak="skills">11</span> skills, loaded only when needed</h2>
+      <p class="lead">Each skill's description is all that loads until the task needs it, plus one stack skill per template, installed only in projects that use it. Descriptions are tested: every skill triggers on a realistic request, and none load on unrelated questions — on haiku and on sonnet.</p>
       <div class="grid">
         <div class="card"><span class="skill">start</span><p>Guided kickoff in plain language → the first spec in the user's words.</p></div>
         <div class="card"><span class="skill">spec</span><p>Spec, approval, plan, tasks, verified criteria.</p></div>
@@ -119,7 +144,7 @@
         <div class="card"><span class="skill">preflight</span><p>What must happen before a merge.</p></div>
         <div class="card"><span class="skill">retro</span><p>Turn repeated corrections into rules and knowledge.</p></div>
         <div class="card"><span class="skill">adopt</span><p>Move a big AGENTS.md onto the kit, section by section.</p></div>
-        <div class="card"><span class="skill">stack-nuxt-supabase</span><p>Conventions for the Nuxt + Supabase monorepo.</p></div>
+        <div class="card"><span class="skill">stack-*</span><p>Per template, in the project only: <code>stack-nuxt-supabase</code> (app monorepo), <code>stack-nuxt-content-site</code> (content site).</p></div>
       </div>
     </div>
   </section>
@@ -186,7 +211,7 @@
       <div class="stats">
         <div class="stat"><b>100+</b><span>unit and lint tests, Node 20 and 22</span></div>
         <div class="stat"><b>Live</b><span>smoke test in real Claude Code each release</span></div>
-        <div class="stat"><b><span data-ak="skills">12</span> / <span data-ak="skills">12</span></b><span>skills trigger on their prompt — and none on unrelated ones</span></div>
+        <div class="stat"><b><span data-ak="all-skills">13</span> / <span data-ak="all-skills">13</span></b><span>skills trigger on their prompt — and none on unrelated ones</span></div>
         <div class="stat"><b>9 / 9</b><span>auth checks against the built app server</span></div>
       </div>
     </div>

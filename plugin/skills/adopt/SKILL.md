@@ -30,5 +30,12 @@ For each section, biggest first:
 ## 4. Auto-memory
 Project rules stored in Claude's auto-memory (`~/.claude/projects/<project>/memory/`) are invisible to teammates and other tools. Propose moving the durable ones (rules, conventions, decisions) into `.knowledge/` (memory type `feedback`/`project` → `rule`/`decision`; `reference` → `reference`) and keep memory for personal notes. Move only what the user approves; leave a one-line memory pointing to the knowledge entry if useful.
 
-## 5. Finish
+## 5. Living specs for the existing code
+Living specs (`work/specs/<capability>/spec.md`) are the source of truth future changes merge into. Bootstrap them gradually — never all at once:
+1. Propose a capability list (areas users recognise: `auth`, `invoices`, `inventory`…) from routes, pages, RPCs and any help/docs content. The user trims it.
+2. One capability per step: write its spec from what the code does **today** (notation: `spec` skill `references/notation.md`) — EARS requirements and the scenarios that matter (rules, money, permissions first). Run `specs.mjs lint <cap>`; show it; the user confirms or corrects.
+3. Existing tests that prove a scenario can be renamed to start with its id over time; `specs.mjs trace <cap>` shows the gaps (preflight only warns for living-spec gaps).
+4. A capability with no spec yet gets one the first time a change touches it (that change ADDs its requirements).
+
+## 6. Finish
 `agent-kit doctor` must pass the context budget. Summarise: tokens before → after, new skills, folder CLAUDE.md files, knowledge entries, and anything left for the user to decide.

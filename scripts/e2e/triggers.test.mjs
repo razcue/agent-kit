@@ -12,6 +12,9 @@ describe("triggers", () => {
   it("Many: other tools and junk lines are ignored", () =>
     assert.deepEqual(skillsUsed(["warning", use("spec"), JSON.stringify({ type: "assistant", message: { content: [{ type: "tool_use", name: "Bash", input: {} }] } })]), ["spec"]))
   it("Interface: negative cases exist", () => assert.ok(NEGATIVE.length >= 3))
-  it("Interface: one case per plugin skill", () =>
-    assert.deepEqual(CASES.map(([s]) => s).sort(), readdirSync(new URL("../../plugin/skills", import.meta.url)).sort()))
+  it("Interface: one case per plugin skill and per template stack skill", () =>
+    assert.deepEqual(
+      CASES.map(([s]) => s).sort(),
+      [...readdirSync(new URL("../../plugin/skills", import.meta.url)), ...readdirSync(new URL("../../templates/skills", import.meta.url))].sort(),
+    ))
 })

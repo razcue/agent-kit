@@ -20,25 +20,32 @@ import { estimate, main as contextMain } from "../plugin/scripts/context.mjs"
 import { main as commitMain } from "../plugin/scripts/commit.mjs"
 import { main as usageMain } from "../plugin/scripts/usage.mjs"
 import { collectWork, main as workMain, renderBoard } from "../plugin/scripts/work.mjs"
-import { KIT_VERSION, QUESTIONS, init } from "./lib/init.mjs"
+import { main as specsMain } from "../plugin/scripts/specs.mjs"
+import { main as qaMain, syncQa } from "../plugin/scripts/qa.mjs"
+import { KIT_VERSION, QUESTIONS, STACK_SKILLS, init } from "./lib/init.mjs"
+import { propose } from "./lib/propose.mjs"
 import { uninstall } from "./lib/uninstall.mjs"
 import { upgrade } from "./lib/upgrade.mjs"
 
 const HELP = `agent-kit — minimal agent-driven development kit for Claude Code
 
   agent-kit init [dir]     ask the setup questions and write the project (re-runnable)
-      --name <kebab>  --kind monorepo|existing  --apps web,app,docs
+      --name <kebab>  --kind monorepo|site|existing|blank  --stack none|nuxt-supabase|nuxt-content-site  --apps web,app,docs
       --level technical|non-technical  --lang en|es  --method sdd-tdd|sdd  --git pr|trunk|read-only
       --main <branch>  --marketplace github:<owner/repo>|<local path>  --yes (defaults, no prompts)
       --supabase-mcp <project-ref>   read-only Supabase MCP server in .mcp.json
+      --qa-checklist true|false  --test-data true|false (Supabase only)  --test-prefix TEST_  --test-data-dir supabase/test-data
   agent-kit upgrade [dir] [--yes]   new questions only + re-apply the agent layer + what's new
+  agent-kit propose "<title>" [--kind skill|hook|…] [--body …]   send an improvement idea to the kit
   agent-kit uninstall [dir] [--dry-run]   remove what agent-kit added (backed up; your content stays)
   agent-kit setup [--home <agent-kit clone>]   make global knowledge writable on this machine
   agent-kit doctor [dir] [--fix]   check a project's agent setup (--fix regenerates indexes and the board)
   agent-kit knowledge <paths|find|index|check> ...   knowledge base tools
   agent-kit scripts <find|list|run|test|new|index|check> ...   script registry
   agent-kit tdd <status|run> ...   TDD status and related-test runs
-  agent-kit work <status|board|trace> ...   active work, board, acceptance-criteria trace
+  agent-kit work <status|board|trace|new> ...   active work, board, scenario trace of a change
+  agent-kit specs <lint|next|merge|trace|list> ...   living specs: notation lint, next id, merge a change, trace
+  agent-kit qa <sync|run|status|gaps> ...   QA checklist from the living specs, QA runs, test-data fixture gaps
   agent-kit preflight [base]   pre-merge checklist (exit 1 = block)
   agent-kit context [dir] [--budget N]   tokens loaded every session + invisible skills
   agent-kit usage [--days N]   usage signals for a retro
@@ -89,6 +96,7 @@ function fix(dir) {
   if (existsSync(join(dir, "work"))) {
     writeFileSync(join(dir, "work", "BOARD.md"), renderBoard(collectWork(dir)))
     done.push("work/BOARD.md")
+    done.push(...syncQa(dir).written)
   }
   console.log(`regenerated: ${done.join(", ")}\n`)
 }
@@ -142,6 +150,14 @@ async function doctor(target, flags = {}) {
     const hooksPath = spawnSync("git", ["-C", dir, "config", "--get", "core.hooksPath"], { encoding: "utf8" }).stdout.trim()
     ok(hooksPath.includes(".husky"), `git hooks active${hooksPath ? ` (${hooksPath})` : ""}`, "run npm install (husky sets core.hooksPath)")
   }
+  const stackSkill = STACK_SKILLS[cfg.stack]
+  if (stackSkill) {
+    const installed = join(dir, ".claude", "skills", stackSkill, "SKILL.md")
+    const shipped = fileURLToPath(new URL(`../templates/skills/${stackSkill}/SKILL.md`, import.meta.url))
+    ok(existsSync(installed), `${stackSkill} skill installed`, "re-run init")
+    if (existsSync(installed))
+      ok(readFileSync(installed, "utf8") === readFileSync(shipped, "utf8"), `${stackSkill} skill is current`, "agent-kit upgrade")
+  }
   const mcp = readJson(join(dir, ".mcp.json"))?.mcpServers?.supabase
   if (mcp) ok(/read_only=true/.test(mcp.url ?? "") || (mcp.args ?? []).includes("--read-only"), "Supabase MCP server is read-only", "agents could write to the database — add read_only=true")
   const sc = checkScripts(dir)
@@ -161,6 +177,8 @@ async function run() {
   if (cmd === "scripts") return scriptsMain(rest)
   if (cmd === "tdd") return tddMain(rest)
   if (cmd === "work") return workMain(rest)
+  if (cmd === "specs") return specsMain(rest)
+  if (cmd === "qa") return qaMain(rest)
   if (cmd === "commit") return commitMain(rest)
   if (cmd === "context") return contextMain(rest)
   if (cmd === "usage") return usageMain(rest)
@@ -173,6 +191,7 @@ async function run() {
   if (cmd === "init") return init(args[0], flags)
   if (cmd === "setup") return setup(flags)
   if (cmd === "upgrade") return upgrade(args[0], flags)
+  if (cmd === "propose") return propose(args.join(" "), flags)
   if (cmd === "uninstall") return uninstall(args[0], { dryRun: Boolean(flags["dry-run"]) })
   if (cmd === "doctor") return await doctor(args[0], flags)
   if (cmd === "--version" || cmd === "-v")

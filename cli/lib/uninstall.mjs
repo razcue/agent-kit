@@ -1,9 +1,10 @@
 // `agent-kit uninstall`: removes only what agent-kit added to a project — the
 // AGENTS.md block, its settings entries and agent-kit.json — after backing them
 // up. Project content (.knowledge/, work/, scripts/, commitlint) is kept.
-import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { copyFileSync, cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { PROJECT_FILE, STATE_DIR, findProjectDir, readJson } from "../../plugin/scripts/config.mjs"
+import { STACK_SKILLS } from "./init.mjs"
 import { removeBlock, stripSettings } from "./lifecycle.mjs"
 
 export function uninstall(target, { dryRun = false } = {}) {
@@ -13,7 +14,7 @@ export function uninstall(target, { dryRun = false } = {}) {
   const plan = []
   const save = (rel) => {
     mkdirSync(dirname(join(backup, rel)), { recursive: true })
-    copyFileSync(join(dir, rel), join(backup, rel))
+    cpSync(join(dir, rel), join(backup, rel), { recursive: true })
   }
 
   const agents = join(dir, "AGENTS.md")
@@ -25,6 +26,10 @@ export function uninstall(target, { dryRun = false } = {}) {
   if (existsSync(settingsPath)) {
     const next = stripSettings(readJson(settingsPath))
     plan.push([".claude/settings.json", next ? "remove the plugin and git-flow rules" : "delete (only agent-kit entries)", () => (next ? writeFileSync(settingsPath, `${JSON.stringify(next, null, 2)}\n`) : rmSync(settingsPath))])
+  }
+  for (const skill of Object.values(STACK_SKILLS)) {
+    const rel = `.claude/skills/${skill}`
+    if (existsSync(join(dir, rel))) plan.push([rel, "delete (stack skill installed by agent-kit)", () => rmSync(join(dir, rel), { recursive: true })])
   }
   plan.push([PROJECT_FILE, "delete", () => rmSync(join(dir, PROJECT_FILE))])
 

@@ -10,7 +10,8 @@ import { collectChanges, repoFiles, repoRoot } from "./changes.mjs"
 import { SCRIPT_EXT, parseHeader } from "./scripts.mjs"
 import { findProjectDir } from "./config.mjs"
 import { projectTestConfig, tddStatus } from "./tdd.mjs"
-import { traceGaps } from "./work.mjs"
+import { testFiles, workGaps } from "./work.mjs"
+import { qaPreflight } from "./qa.mjs"
 
 export { addedLines } from "./changes.mjs"
 
@@ -25,18 +26,34 @@ const SECRET_PATTERNS = [
 /**
  * @param untested changed logic files without a test (only passed in sdd-tdd projects)
  * @param undocumentedScripts changed scripts under scripts/ without @summary/@usage
- * @param gaps approved/done specs with acceptance criteria not covered by a test or a ✅ check
+ * @param gaps approved/done changes with scenarios (or legacy ACs) not covered by a test or a ✅ check
+ * @param unmerged done changes whose delta specs are not merged into the living specs
+ * @param living uncovered / total living-spec scenarios
+ * @param lint spec notation errors (`file: message`)
+ * @param qa QA warnings from qaPreflight (stale checklist, unknown fixtures, migrations without seed/purge changes)
  */
-export function analyze({ status, added, untested = [], undocumentedScripts = [], gaps = [] }) {
+export function analyze({ status, added, untested = [], undocumentedScripts = [], gaps = [], unmerged = [], living = null, lint = [], qa = null }) {
   const report = { violations: [], database: [], configuration: [], dependencies: [], warnings: [] }
   for (const file of untested) report.violations.push(`\`${file}\` changed without a test — TDD: write the failing test first`)
   for (const file of undocumentedScripts)
     report.violations.push(`\`${file}\` has no @summary/@usage header — document it (scripts skill)`)
   for (const { spec, missing } of gaps) {
-    const msg = `spec \`${spec.id}\` (${spec.status}): ${missing.join(", ")} not covered — reference \`${spec.id.match(/^\d+/)?.[0] ?? spec.id}/AC-n\` in a test or add a ✅ row to tasks.md`
+    const how = spec.legacy
+      ? `reference \`${spec.id.match(/^\d+/)?.[0] ?? spec.id}/AC-n\` in a test`
+      : "start a test name with the scenario id"
+    const msg = `change \`${spec.id}\` (${spec.status}): ${missing.join(", ")} not covered — ${how} or add a ✅ row to tasks.md`
     if (spec.status === "done") report.violations.push(msg)
     else report.warnings.push(msg)
   }
+  for (const id of unmerged)
+    report.violations.push(`change \`${id}\` is done but not merged into the living specs — run \`specs.mjs merge ${id.match(/^\d+/)?.[0] ?? id}\``)
+  if (living?.uncovered)
+    report.warnings.push(`${living.uncovered} of ${living.total} living-spec scenario(s) not covered by a test or ✅ check — \`specs.mjs trace\``)
+  for (const msg of lint) report.warnings.push(`spec notation: ${msg}`)
+  if (qa?.migrationsWithoutSeed.length)
+    report.warnings.push(`migrations changed (${qa.migrationsWithoutSeed.map((f) => `\`${f}\``).join(", ")}) but test data seed.sql / purge.sql didn't — add fixtures for the new scenarios and keep the purge order complete`)
+  if (qa?.outOfSync) report.warnings.push("QA checklist is out of date with the living specs — run `qa.mjs sync`")
+  for (const u of qa?.unknown ?? []) report.warnings.push(`seed.sql:${u.line} @fixture names unknown scenario ${u.id}`)
   for (const [file, st] of status) {
     if (!MIGRATION.test(file)) continue
     if (st === "A" || st === "?") report.database.push(`apply new migration \`${file}\``)
@@ -97,8 +114,9 @@ function main([baseArg]) {
     })
     .map(([f]) => f)
 
-  const gaps = traceGaps(findProjectDir(root) ?? root, root)
-  const report = analyze({ status, added, untested, undocumentedScripts, gaps })
+  const project = findProjectDir(root) ?? root
+  const work = workGaps(project, testFiles(root))
+  const report = analyze({ status, added, untested, undocumentedScripts, ...work, qa: qaPreflight(project, status) })
   console.log(render(report, label))
   return report.violations.length ? 1 : 0
 }

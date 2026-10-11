@@ -1,6 +1,6 @@
 ---
 name: stack-nuxt-supabase
-description: Use BEFORE adding or changing pages, components, server routes (apps/*/server/api), auth, Zod schemas, SQL migrations or RPCs in the Nuxt 4 + shadcn-vue + Tailwind v4 + Supabase monorepo (apps/web, apps/app, apps/docs, packages/ui, packages/shared). Conventions and patterns, details in references/.
+description: Use BEFORE adding or changing pages, components, server routes (apps/*/server/api), auth, Zod schemas, SQL migrations, RPCs or test data in the Nuxt 4 + shadcn-vue + Tailwind v4 + Supabase monorepo (apps/web, apps/app, apps/docs, packages/ui, packages/shared). Conventions and patterns, details in references/.
 ---
 
 # Nuxt + Supabase stack
@@ -13,6 +13,7 @@ Open only the reference you need:
 | SQL migrations, RPCs, grants | `references/migrations.md` |
 | Pages, components, shadcn-vue, forms, tables | `references/ui.md` |
 | Workspaces, shared packages, layers, commands | `references/monorepo.md` |
+| Test data: seed / purge scripts, fixtures per scenario, the `_env` guard | `references/test-data.md` |
 
 ## Non-negotiables
 - **The browser never reaches the database.** All data goes through `apps/app/server/api/*` with the service-role client; the browser uses Supabase for auth only. Never grant anything to `anon` / `authenticated`.

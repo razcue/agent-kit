@@ -16,14 +16,14 @@ Ask only what you can't infer, one short message at a time:
 5. **Content** — who writes texts and images; is there existing material?
 6. **Done means** — what must work for the first version to count as finished?
 
-## 2. Write the first spec
-Create it with `node <scripts>/work.mjs new spec <slug> --title "…"`, then fill `spec.md` in the user's words:
-- The acceptance criteria describe what the user will see or do (`**AC-1** Given a visitor on the home page, When they tap "Contact", Then they see the form`).
-- Put "later" ideas under **Out**, so version one stays small.
+## 2. Write the first change
+Create it with `node <scripts>/work.mjs new change <slug> --title "…"`, then, in the user's words:
+- `proposal.md`: what and why; "later" ideas under **Out**, so version one stays small.
+- One delta spec per area (`specs/<capability>.md`, e.g. `pages`, `contact`) with only **ADDED** requirements — notation in the `spec` skill's `references/notation.md`. Each requirement is one EARS sentence (`When a visitor taps "Contact", the site shall show the contact form.`); each scenario describes what the user will see or do (`Given a visitor on the home page / When they tap "Contact" / Then they see the form`), tagged with its ZOMBIES category. Run `specs.mjs lint`.
 - Record facts that will matter later with the `knowledge` skill (business vocabulary, audience, brand colours → `.knowledge/business/` and `.knowledge/ux/`).
 
 ## 3. Confirm, then build
-Show the spec as a short list (what's in, what's out, how we'll know it's done). After the user approves, set `status: approved` and continue with the `spec` skill (plan → tasks → implement). For a content site, the first tasks are usually: pages in `content/`, navigation, colours in `app/assets/css/main.css`.
+Show it as a short list (what's in, what's out, how we'll know it's done — the scenarios in plain words; for a non-technical user, hide ids and tags). After the user approves, set `status: approved` and continue with the `spec` skill (plan → tasks → implement). For a content site, the first tasks are usually: pages in `content/`, navigation, colours in `app/assets/css/main.css`.
 
 ## 4. Show progress
 After each visible change, tell the user how to see it (`npm run dev`, then open http://localhost:3000/<page>) and what to look for.

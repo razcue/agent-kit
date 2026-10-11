@@ -1,19 +1,22 @@
 #!/usr/bin/env node
-// Work tracking: features and specs in work/, their status and next task, and
-// acceptance-criteria traceability (spec AC → test or verified check).
+// Work tracking: fast-track features (work/features/) and changes
+// (work/changes/NNN-slug/: proposal, delta specs, plan, tasks), their status and
+// next task, and traceability (scenario → test or verified check). Living specs
+// (work/specs/<capability>/spec.md) are handled by specs.mjs.
 //
 //   node work.mjs status              active work with progress and next task
 //   node work.mjs board               regenerate work/BOARD.md
-//   node work.mjs trace [spec-id]     AC → tests (`NNN/AC-n` in the test) or ✅ checks
-//   node work.mjs new feature|spec <slug> [--title "…"]   next number + files from the templates
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
+//   node work.mjs trace [NNN]         scenarios (or legacy AC-n) → tests or ✅ checks
+//   node work.mjs new feature|change <slug> [--title "…"]   next number + files from the templates
+import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from "node:fs"
 import { basename, join } from "node:path"
 import { pathToFileURL } from "node:url"
-import { repoFiles, repoRoot } from "./changes.mjs"
+import { repoRoot } from "./changes.mjs"
 import { PLUGIN_ROOT, findProjectDir } from "./config.mjs"
 import { parseFrontmatter } from "./knowledge.mjs"
-import { isTest } from "./tdd.mjs"
+import { changeScenarios, lintProject, listChanges, livingSpecs, parseSpec, scenarioChecks, testFiles, traceScenarios } from "./specs.mjs"
 
+export { testFiles }
 export const ACTIVE = new Set(["in-progress", "draft", "approved"])
 
 /** Checklist progress of a Markdown text: counts and the first open item. */
@@ -34,20 +37,23 @@ export function collectWork(project) {
       const { data } = parseFrontmatter(text)
       items.push({ kind: "feature", id: basename(file, ".md"), path: `work/features/${file}`, title: title(text, file), status: data.status || "in-progress", ...progress(text) })
     }
-  const specs = join(project, "work", "specs")
-  if (existsSync(specs))
-    for (const dir of readdirSync(specs).sort()) {
-      const specPath = join(specs, dir, "spec.md")
-      if (!existsSync(specPath)) continue
-      const text = readFileSync(specPath, "utf8")
-      const tasksPath = join(specs, dir, "tasks.md")
-      const tasks = existsSync(tasksPath) ? readFileSync(tasksPath, "utf8") : ""
-      const { data } = parseFrontmatter(text)
-      items.push({ kind: "spec", id: dir, path: `work/specs/${dir}`, title: title(text, dir), status: data.status || "draft", ...progress(tasks), specText: text, tasksText: tasks })
-    }
-  return items
+  for (const c of listChanges(project))
+    items.push({
+      kind: "change",
+      id: c.id,
+      path: c.path,
+      title: title(c.text, c.id),
+      status: c.status,
+      merged: c.merged,
+      ...progress(c.tasksText),
+      specText: c.text,
+      tasksText: c.tasksText,
+      deltas: c.deltas,
+    })
+  return items.sort((a, b) => (a.kind === b.kind ? a.id.localeCompare(b.id) : a.kind === "feature" ? -1 : 1))
 }
 
+// ── legacy acceptance criteria (`**AC-n**` + `NNN/AC-n` in tests) ──────────
 export function parseACs(specText) {
   return [...new Set([...specText.matchAll(/\*\*AC-(\d+)\*\*/g)].map((m) => Number(m[1])))].sort((a, b) => a - b)
 }
@@ -70,20 +76,35 @@ export function trace(spec, tests) {
   })
 }
 
-export function testFiles(root) {
-  return repoFiles(root)
-    .filter(isTest)
-    .filter((f) => existsSync(join(root, f)) && statSync(join(root, f)).size < 1024 * 1024)
-    .map((f) => ({ path: f, text: readFileSync(join(root, f), "utf8") }))
+/** A change's trace rows `{ id, tests, check, covered }`: by scenario id when it has deltas, else legacy AC-n. */
+export function traceChange(change, tests) {
+  if (change.deltas?.length) return traceScenarios(changeScenarios(change), tests, scenarioChecks(change.tasksText))
+  return trace(change, tests).map((r) => ({ ...r, id: r.ac }))
 }
 
-/** Specs that are approved or done, with their uncovered ACs. */
-export function traceGaps(project, root) {
-  const tests = testFiles(root)
-  return collectWork(project)
-    .filter((w) => w.kind === "spec" && (w.status === "approved" || w.status === "done"))
-    .map((spec) => ({ spec, missing: trace(spec, tests).filter((r) => !r.covered).map((r) => r.ac) }))
+/**
+ * Everything preflight reports about work and specs:
+ * gaps — approved/done changes with uncovered scenarios (or legacy ACs);
+ * unmerged — done changes whose deltas aren't in the living specs;
+ * living — uncovered / total living-spec scenarios; lint — notation errors.
+ */
+export function workGaps(project, tests) {
+  const changes = collectWork(project).filter((w) => w.kind === "change")
+  const gaps = changes
+    .filter((c) => c.status === "approved" || c.status === "done")
+    .map((c) => ({ spec: { id: c.id, status: c.status, legacy: !c.deltas.length }, missing: traceChange(c, tests).filter((r) => !r.covered).map((r) => r.id) }))
     .filter((g) => g.missing.length)
+  const unmerged = changes.filter((c) => c.status === "done" && c.deltas.length && !c.merged).map((c) => c.id)
+  const checks = new Map(changes.flatMap((c) => [...scenarioChecks(c.tasksText)]))
+  const scenarios = livingSpecs(project).flatMap((s) => parseSpec(s.text).requirements.flatMap((r) => r.scenarios.filter((x) => x.req)))
+  const rows = traceScenarios(scenarios, tests, checks)
+  const lint = lintProject(project).flatMap((r) => r.errors.map((e) => `${r.file}: ${e}`))
+  return { gaps, unmerged, living: { uncovered: rows.filter((r) => !r.covered).length, total: rows.length }, lint }
+}
+
+/** Approved/done changes with uncovered items (kept for 0.12 callers). */
+export function traceGaps(project, root) {
+  return workGaps(project, testFiles(root)).gaps
 }
 
 /** Next free NNN among names like "004-x" / "004-x.md". */
@@ -102,29 +123,45 @@ status: in-progress # in-progress | done
   - evidence: <command → result, or what you checked>
 `
 
-/** Creates a feature file or a spec folder; returns the created paths (relative). */
+const ls = (dir) => (existsSync(dir) ? readdirSync(dir) : [])
+
+/** Creates a feature file or a change folder; returns the created paths (relative). */
 export function createWork(project, kind, slug, title) {
-  if (!["feature", "spec"].includes(kind)) throw new Error("kind must be feature or spec")
+  if (kind === "spec") kind = "change"
+  if (!["feature", "change"].includes(kind)) throw new Error("kind must be feature or change")
   if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug ?? "")) throw new Error("slug: lower-case words joined by -, e.g. invoice-export")
-  const base = join(project, "work", kind === "spec" ? "specs" : "features")
-  mkdirSync(base, { recursive: true })
-  const id = `${nextNumber(readdirSync(base))}-${slug}`
   const heading = title || slug.replace(/-/g, " ").replace(/^./, (c) => c.toUpperCase())
   if (kind === "feature") {
+    const base = join(project, "work", "features")
+    mkdirSync(base, { recursive: true })
+    const id = `${nextNumber(readdirSync(base))}-${slug}`
     writeFileSync(join(base, `${id}.md`), FEATURE_TEMPLATE(heading))
     return [`work/features/${id}.md`]
   }
-  mkdirSync(join(base, id))
+  const base = join(project, "work", "changes")
+  const id = `${nextNumber([...ls(base), ...ls(join(project, "work", "specs"))])}-${slug}`
+  mkdirSync(join(base, id), { recursive: true })
   const created = []
-  for (const file of ["spec.md", "plan.md", "tasks.md"]) {
-    const text = readFileSync(join(PLUGIN_ROOT, "skills", "spec", "templates", file), "utf8")
-      .replaceAll("NNN-slug", id)
-      .replaceAll("<Title>", heading)
-      .replaceAll("NNN/", `${id.slice(0, 3)}/`)
+  for (const file of ["proposal.md", "plan.md", "tasks.md"]) {
+    const text = readFileSync(join(PLUGIN_ROOT, "skills", "spec", "templates", file), "utf8").replaceAll("NNN-slug", id).replaceAll("<Title>", heading)
     writeFileSync(join(base, id, file), text)
-    created.push(`work/specs/${id}/${file}`)
+    created.push(`work/changes/${id}/${file}`)
   }
   return created
+}
+
+/** Old layout (≤ 0.12): work/specs/NNN-slug/ → work/changes/NNN-slug/, moved untouched. */
+export function migrateWorkLayout(project) {
+  const from = join(project, "work", "specs")
+  const moved = []
+  for (const id of ls(from).filter((d) => /^\d+-/.test(d) && existsSync(join(from, d, "spec.md")))) {
+    const to = join(project, "work", "changes", id)
+    if (existsSync(to)) continue
+    mkdirSync(join(project, "work", "changes"), { recursive: true })
+    renameSync(join(from, id), to)
+    moved.push(`work/specs/${id} → work/changes/${id}`)
+  }
+  return moved
 }
 
 export function renderBoard(items) {
@@ -136,23 +173,24 @@ export function renderBoard(items) {
     "| Work | Status | Progress | Next |",
     "|---|---|---|---|",
   ]
-  for (const w of items)
-    rows.push(`| [${w.kind === "spec" ? "spec" : "feature"} ${w.id}](${w.path.replace(/^work\//, "")}) — ${w.title} | ${w.status} | ${w.total ? `${w.done}/${w.total}` : "—"} | ${w.next ?? "—"} |`)
+  for (const w of items) {
+    const status = w.kind === "change" && w.status === "done" && w.deltas?.length && !w.merged ? "done (not merged)" : w.status
+    rows.push(`| [${w.kind} ${w.id}](${w.path.replace(/^work\//, "")}) — ${w.title} | ${status} | ${w.total ? `${w.done}/${w.total}` : "—"} | ${w.next ?? "—"} |`)
+  }
   if (!items.length) rows.push("| _none yet_ | | | |")
   return `${rows.join("\n")}\n`
 }
 
 export function main(argv) {
   const [cmd, id] = argv
+  const project = findProjectDir() ?? process.cwd()
   if (cmd === "new") {
-    const project = findProjectDir() ?? process.cwd()
     const t = argv.indexOf("--title")
     const created = createWork(project, argv[1], argv[2], t !== -1 ? argv[t + 1] : "")
     for (const f of created) console.log(`created ${f}`)
     writeFileSync(join(project, "work", "BOARD.md"), renderBoard(collectWork(project)))
     return 0
   }
-  const project = findProjectDir() ?? process.cwd()
   if (cmd === "status") {
     const active = collectWork(project).filter((w) => ACTIVE.has(w.status))
     if (!active.length) console.log("No active work.")
@@ -168,22 +206,22 @@ export function main(argv) {
   if (cmd === "trace") {
     const root = repoRoot(project) ?? project
     const tests = testFiles(root)
-    const specs = collectWork(project).filter((w) => w.kind === "spec" && (!id || w.id.startsWith(id)))
-    if (!specs.length) console.log(id ? `No spec matching "${id}".` : "No specs.")
+    const changes = collectWork(project).filter((w) => w.kind === "change" && (!id || w.id.startsWith(id)))
+    if (!changes.length) console.log(id ? `No change matching "${id}".` : "No changes.")
     let missing = 0
-    for (const spec of specs) {
-      const rows = trace(spec, tests)
-      console.log(`## ${spec.id} (${spec.status})`)
-      if (!rows.length) console.log("- no **AC-n** found in spec.md")
+    for (const c of changes) {
+      const rows = traceChange(c, tests)
+      console.log(`## ${c.id} (${c.status}${c.merged ? `, merged ${c.merged}` : ""})`)
+      if (!rows.length) console.log(c.deltas.length ? "- no scenarios in the delta specs" : "- no delta specs (specs/<capability>.md) and no **AC-n**")
       for (const r of rows) {
         const how = r.tests.length ? r.tests.join(", ") : r.check ? `check: ${r.check}` : "✗ not covered"
-        console.log(`- ${r.ac} — ${how}`)
+        console.log(`- ${r.id} — ${how}`)
         if (!r.covered) missing++
       }
     }
     return missing ? 1 : 0
   }
-  console.log('usage: work.mjs status | board | trace [spec-id] | new feature|spec <slug> [--title "…"]')
+  console.log('usage: work.mjs status | board | trace [NNN] | new feature|change <slug> [--title "…"]')
   return 2
 }
 

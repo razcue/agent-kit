@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.13.0 — 2026-10-10
+- **Spec-anchored SDD with living specs**: `work/specs/<capability>/spec.md` is the source of truth for current behaviour. Spec-lane work is a **change** in `work/changes/NNN-slug/` — `proposal.md` (first artifact), delta specs `specs/<capability>.md` (ADDED / MODIFIED / REMOVED requirements), `plan.md`, `tasks.md`. `specs.mjs merge NNN` applies the deltas all or nothing, retires removed ids (never reused) and marks the proposal `merged:`. Fast-track edits the living spec in place.
+- **One standard notation**: requirements in **EARS** (`### cap.R1 — name` + `When …, the <system> shall …`), **Given/When/Then** scenarios (BDD) as the acceptance tests (ATDD), one **ZOMBIES** tag each (`#### cap.R1.S1 — name @boundary`). `specs.mjs lint|next|merge|trace|list` (also `agent-kit specs …`); skill reference `spec/references/notation.md`; global knowledge `ears-requirements`, `gherkin-scenarios`.
+- **Scenario traceability**: tests start their name with the scenario id; preflight blocks a done change with uncovered scenarios or not merged, warns on living-spec gaps and notation errors. Changes from ≤ 0.12 keep their `NNN/AC-n` traces.
+- **QA dimension** (asked at setup, default on, change by re-running init): `work/qa/checklist.md` + offline `checklist.html` generated from the living specs (one item per scenario, its steps, ZOMBIES tag and fixture); dated QA runs (`qa.mjs run`), `qa.mjs status` with **re-check** when a scenario changed after passing; `qa.mjs gaps`. `specs.mjs merge` refreshes the checklist.
+- **Supabase test data** (`--test-data`, Supabase projects only): `supabase/test-data/{env,seed,purge}.sql` + README — one transaction each, the `_env` guard first (refuses unless dev / test / staging; `_env` belongs in every environment and is in the monorepo init migration), rows marked with `qa.testPrefix` (`TEST_`), fixtures tagged `-- @fixture <ids> @<zombies>`. Applied in the SQL Editor; skills may offer `supabase db query --linked -f …` / psql and run it only after approval — never `db reset`. Preflight warns when migrations change without seed/purge changes. Stack skill reference `test-data.md`.
+- **Upgrade**: `agent-kit upgrade` moves `work/specs/NNN-*` to `work/changes/`, asks the new QA questions, and refreshes `work/README.md`.
+- E2E: `scripts/e2e/spec-flow.mjs --lane spec|feature` — a complex request opens a change with lint-clean deltas; a fast-track tweak keeps its living spec true.
+
+## 0.12.0 — 2026-10-08
+- **A stack skill per template, in the project only**: `stack-nuxt-supabase` moved out of the plugin and `stack-nuxt-content-site` is new; `init` installs the template's skill into `.claude/skills/`, so unrelated projects pay no tokens for it. `upgrade` refreshes it (backed up), `doctor` checks it's current, `uninstall` removes it.
+- **Blank projects**: `--kind blank` (or "Blank project") — agent layer only, no template, with a minimal `package.json`; existing and blank projects can opt into a stack skill (`--stack none|nuxt-supabase|nuxt-content-site`).
+- **`agent-kit propose "<title>"`**: projects send improvement ideas to the kit — into the clone's `work/proposals/` inbox, or as a ready `gh issue create` command; the `retro` skill uses it.
+- **Evolve**: `scripts/evolve/scout.mjs` (new Claude Code version, new hook events in the docs, template dependencies a major behind, vs a reviewed baseline) and `scripts/evolve/ROUTINE.md` (weekly cloud routine: scout + web research on skills, harnesses and workflows → at most 5 proposals).
+- Trigger eval covers both stack skills (each in its template's project).
+
 ## 0.11.0 — 2026-10-08
 - **Session context budget**: rendered under 9,500 characters (Claude Code caps hook context at 10,000 and cuts the rest silently); when needed it collapses global knowledge groups, then the scripts list, then project groups, and clips summaries to 160 characters. `knowledge check` warns about longer summaries.
 - **Template CI** (`.github/workflows/templates.yml`): scaffolds the app monorepo and the content site, installs, checks, builds, and runs the auth e2e — on template changes and weekly.

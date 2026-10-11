@@ -11,12 +11,14 @@
 - [[server-owned-user-data]] — A user's role and scope come only from a server-owned table; server-owned user fields go in app_metadata; never read user_metadata (users can edit it). _(rule)_
 - [[shared-zod-schemas]] — Each module has row/create/update Zod schemas in packages/shared, used by the form, the server route (readValidatedBody) and tests — never duplicated. _(rule)_
 
-## meta (5)
+## meta (7)
 
 - [[agent-kit-architecture]] — Behaviour (skills, hooks, agent) ships as a versioned Claude Code plugin from the agent-kit marketplace; the npx CLI only asks fixed questions and writes project files; knowledge and scripts are plain files in git, handled by zero-dependency Node scripts. _(decision)_
+- [[ears-requirements]] — Each living-spec requirement is one EARS sentence (The/When/While/If…then/Where …, the <system> shall …): concrete system, one behaviour, measurable. _(howto)_
+- [[gherkin-scenarios]] — Requirements have Given/When/Then scenarios with one ZOMBIES tag; they are the acceptance tests — a test proving one starts its name with the scenario id. _(howto)_
 - [[knowledge-scopes]] — Project scopes (business, env, decisions, ux, stack, local) live in .knowledge/; global scopes (stack, meta, ux) live in the agent-kit repo; only one-line summaries load per session. _(concept)_
 - [[promote-reused-scripts]] — Throwaway scripts go in .agent-kit/scratch/ (gitignored, searchable); the second time one is needed it moves to scripts/<area>/ with a header (@summary, @usage), a ZOMBIES test and an index line; cross-project ones go to the agent-kit library. _(rule)_
-- [[work-lanes]] — Every request is Answer (read-only), Fast-track (≤3 files, no schema/permission/money change) or Spec (spec → approval → tasks → verified ACs); the project method is SDD or SDD + TDD (tests first, enforced by preflight). _(concept)_
+- [[work-lanes]] — Answer (read-only), Fast-track (≤3 files, no schema/permission/money) or Spec (proposal + deltas → approval → verified scenarios → merged living specs). _(concept)_
 - [[zombies-testing]] — Pick test cases with ZOMBIES — Zero, One, Many, Boundaries, Interface, Exceptions, Simple — keeping only the categories that apply and starting with the simplest. _(howto)_
 
 ## ux (7)

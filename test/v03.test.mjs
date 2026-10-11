@@ -30,8 +30,8 @@ test("work: AC ids, verified checks and trace by NNN/AC-n", () => {
 })
 
 test("work: board renders every item", () => {
-  const board = renderBoard([{ kind: "spec", id: "001-x", path: "work/specs/001-x", title: "X", status: "approved", done: 1, total: 4, next: "T2" }])
-  assert.match(board, /\| \[spec 001-x\]\(specs\/001-x\) — X \| approved \| 1\/4 \| T2 \|/)
+  const board = renderBoard([{ kind: "change", id: "001-x", path: "work/changes/001-x", title: "X", status: "approved", done: 1, total: 4, next: "T2" }])
+  assert.match(board, /\| \[change 001-x\]\(changes\/001-x\) — X \| approved \| 1\/4 \| T2 \|/)
 })
 
 test("script-nudge: stray scripts only", () => {
@@ -90,7 +90,7 @@ test("knowledge: related gives links and backlinks", () => {
 
 test("preflight: uncovered ACs block done specs, warn approved ones", () => {
   const gaps = [
-    { spec: { id: "001-a", status: "done" }, missing: ["AC-2"] },
+    { spec: { id: "001-a", status: "done", legacy: true }, missing: ["AC-2"] },
     { spec: { id: "002-b", status: "approved" }, missing: ["AC-1"] },
   ]
   const r = analyze({ status: new Map(), added: new Map(), gaps })
@@ -104,15 +104,15 @@ test("work new: numbering and files from the templates", async () => {
   assert.equal(nextNumber([]), "001")
   assert.equal(nextNumber(["001-a.md", "009-b", "README.md"]), "010")
   const dir = mkdtempSync(join(tmpdir(), "ak-work-"))
-  assert.deepEqual(createWork(dir, "spec", "invoice-export", "Invoice export"), [
-    "work/specs/001-invoice-export/spec.md",
-    "work/specs/001-invoice-export/plan.md",
-    "work/specs/001-invoice-export/tasks.md",
+  assert.deepEqual(createWork(dir, "change", "invoice-export", "Invoice export"), [
+    "work/changes/001-invoice-export/proposal.md",
+    "work/changes/001-invoice-export/plan.md",
+    "work/changes/001-invoice-export/tasks.md",
   ])
   assert.deepEqual(createWork(dir, "feature", "fix-footer"), ["work/features/001-fix-footer.md"])
-  assert.deepEqual(createWork(dir, "spec", "second"), ["work/specs/002-second/spec.md", "work/specs/002-second/plan.md", "work/specs/002-second/tasks.md"])
-  assert.throws(() => createWork(dir, "spec", "Bad Slug"), /slug/)
-  assert.throws(() => createWork(dir, "epic", "x"), /feature or spec/)
+  assert.deepEqual(createWork(dir, "change", "second"), ["work/changes/002-second/proposal.md", "work/changes/002-second/plan.md", "work/changes/002-second/tasks.md"])
+  assert.throws(() => createWork(dir, "change", "Bad Slug"), /slug/)
+  assert.throws(() => createWork(dir, "epic", "x"), /feature or change/)
 })
 
 test("session-start: drift notice only when the plugin is newer", async () => {

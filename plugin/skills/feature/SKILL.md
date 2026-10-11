@@ -16,5 +16,6 @@ description: Use BEFORE making any small code change — a fix, a tweak, a small
      - evidence: <command → result, or what you checked>
    ```
 3. **Do the work.** Follow existing patterns and the knowledge entries listed at session start. If the method is **SDD + TDD**, any logic change goes through the `tdd` loop (failing test first); in **SDD**, add or update a test when the change has logic. Helper scripts go through the `scripts` skill.
-4. **Tick tasks only with evidence**: the check you ran and its result, written under the task.
-5. **Finish**: run the project checks (AGENTS.md), set `status: done` (a new session sees active work files automatically, so keep `status` and the next open task accurate), and tell the user what changed and anything they must do (under the project's git flow). A new lasting fact → `knowledge` skill.
+4. **Keep the living spec true.** If the change alters behaviour a living spec describes (`work/specs/<capability>/spec.md`), edit it in place in the same notation (`spec` skill `references/notation.md`): reword the requirement's EARS sentence or a scenario, or add a scenario with an id from `specs.mjs next <cap>.R<n>`. A new requirement or capability is not fast-track → `spec` skill. Run `specs.mjs lint <cap>`, then `qa.mjs sync` when the project has a QA checklist; a test proving the scenario starts its name with the id.
+5. **Tick tasks only with evidence**: the check you ran and its result, written under the task.
+6. **Finish**: run the project checks (AGENTS.md), set `status: done` (a new session sees active work files automatically, so keep `status` and the next open task accurate), and tell the user what changed and anything they must do (under the project's git flow). A new lasting fact → `knowledge` skill.

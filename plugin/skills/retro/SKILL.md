@@ -21,7 +21,7 @@ Goal: fewer repeated corrections and less context next time. Propose, don't appl
 | A rule that can be checked by a machine | a preflight check, a hook or a permission rule — prefer this to prose |
 | A scratch script used ≥ 2 times | promoted script (`scripts` skill, with test) |
 | A skill or knowledge entry nobody uses / context over budget | prune, shorten the summary, or move details out of AGENTS.md |
-| An improvement to agent-kit itself (any project would benefit) | global `meta` knowledge, or a note for the agent-kit repo |
+| An improvement to agent-kit itself (any project would benefit) | `agent-kit propose "<title>" --kind <skill\|hook\|script\|knowledge\|template\|cli\|bug> --body "<problem, proposal, evidence>"` — lands in the kit clone's inbox, or prepares a GitHub issue the user can send |
 
 ## 3. Propose
 A short numbered list: finding → proposed change → where it lands → why (one line each). Biggest saving first.

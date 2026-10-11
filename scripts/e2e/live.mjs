@@ -11,7 +11,7 @@ import { join } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 
 const KIT = fileURLToPath(new URL("../../", import.meta.url))
-export const EXPECTED_SKILLS = ["adopt", "commit", "decide", "feature", "knowledge", "preflight", "retro", "scripts", "spec", "stack-nuxt-supabase", "start", "tdd"]
+export const EXPECTED_SKILLS = ["adopt", "commit", "decide", "feature", "knowledge", "preflight", "retro", "scripts", "spec", "start", "tdd"]
 
 /**
  * Pure: stream-json lines (+ the AGENT_KIT_HOOK_LOG trace, since headless
