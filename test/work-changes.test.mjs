@@ -56,7 +56,7 @@ test("work collect: changes from both layouts, living spec folders are not work 
   assert.equal(items[1].next, "T2 next")
 })
 
-test("001/AC-8 upgrade moves legacy spec folders to work/changes untouched; their NNN/AC-n trace still works", () => {
+test("specs.R8.S1 upgrade moves legacy spec folders to work/changes untouched; their NNN/AC-n trace still works", () => {
   const dir = tmp()
   const spec = "---\nstatus: done\n---\n# Old\n\n- **AC-1** Given x When y Then z\n"
   put(dir, "work/specs/004-old/spec.md", spec)
@@ -72,7 +72,7 @@ test("001/AC-8 upgrade moves legacy spec folders to work/changes untouched; thei
   assert.deepEqual(rows.map((r) => [r.id, r.covered]), [["AC-1", true]])
 })
 
-test("001/AC-6 trace of a change with deltas is by scenario id", () => {
+test("specs.R6.S2 trace of a change with deltas is by scenario id", () => {
   const dir = tmp()
   put(dir, "work/changes/005-logout/proposal.md", "---\nstatus: approved\n---\n# Logout\n")
   put(dir, "work/changes/005-logout/specs/auth.md", DELTA)
@@ -82,7 +82,7 @@ test("001/AC-6 trace of a change with deltas is by scenario id", () => {
   assert.deepEqual(rows.map((r) => [r.id, r.covered]), [["auth.R1.S1", true], ["auth.R1.S2", true]])
 })
 
-test("001/AC-7 gaps: uncovered or unmerged done changes block, approved ones and living specs warn", () => {
+test("specs.R7.S1 gaps: uncovered or unmerged done changes block, approved ones and living specs warn", () => {
   const dir = tmp()
   put(dir, "work/changes/005-logout/proposal.md", "---\nstatus: done\n---\n# Logout\n")
   put(dir, "work/changes/005-logout/specs/auth.md", DELTA)
@@ -105,7 +105,7 @@ test("001/AC-7 gaps: uncovered or unmerged done changes block, approved ones and
   assert.match(analyze({ status: new Map(), added: new Map(), ...g2 }).warnings.join("\n"), /1 of 2 living-spec scenario\(s\) not covered/)
 })
 
-test("001/AC-7 lint errors in specs surface as preflight warnings", () => {
+test("specs.R7.S2 lint errors in specs surface as preflight warnings", () => {
   const dir = tmp()
   put(dir, "work/changes/005-logout/proposal.md", "---\nstatus: approved\n---\n# Logout\n")
   put(dir, "work/changes/005-logout/specs/auth.md", DELTA.replace("When a user logs out, the BFF shall revoke the session.", "Logout works."))
@@ -114,7 +114,7 @@ test("001/AC-7 lint errors in specs surface as preflight warnings", () => {
   assert.match(analyze({ status: new Map(), added: new Map(), ...g }).warnings.join("\n"), /work\/changes\/005-logout\/specs\/auth\.md: auth\.R1: requirement is not EARS/)
 })
 
-test("001/AC-8 `agent-kit upgrade` moves the legacy layout", async () => {
+test("specs.R8.S2 `agent-kit upgrade` moves the legacy layout", async () => {
   const { spawnSync } = await import("node:child_process")
   const cli = new URL("../cli/index.mjs", import.meta.url).pathname
   const dir = tmp()

@@ -2,9 +2,12 @@ name: pages
 
 on:
   push:
-    branches: [main]
-    paths: ["site/**", ".github/workflows/pages.yml"]
+    branches: [master]
+    paths: ["site/**", "scripts/release/site-base.mjs", ".github/workflows/pages.yml"]
   workflow_dispatch:
+  # Daily rebuild so the homepage's stars / forks / clones stay current.
+  schedule:
+    - cron: "0 6 * * *"
 
 permissions:
   contents: read
@@ -21,11 +24,28 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    defaults:
+      run:
+        working-directory: site
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: npm ci
+      # stats.json for the homepage: stars and forks; clones (last 14 days) only with the
+      # optional TRAFFIC_TOKEN secret (a token with push access — GitHub's traffic API needs it).
+      - run: node ../scripts/release/repo-stats.mjs public/stats.json
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TRAFFIC_TOKEN: ${{ secrets.TRAFFIC_TOKEN }}
+      # Static Docus build under the repository's base path; a failed build stops here and nothing is published.
+      - run: npm run generate:pages
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: site/.output/public
       - id: deployment
         uses: actions/deploy-pages@v4

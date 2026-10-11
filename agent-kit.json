@@ -9,11 +9,17 @@
   "methodology": "sdd-tdd",
   "commitConvention": "conventional",
   "gitFlow": "read-only",
-  "mainBranch": "main",
+  "mainBranch": "master",
   "testIgnore": [
     "templates/"
   ],
-  "stack": "other",
-  "kitVersion": "0.6.0",
+  "stack": "none",
+  "qa": {
+    "checklist": true,
+    "testData": false,
+    "testPrefix": "TEST_",
+    "testDataDir": "supabase/test-data"
+  },
+  "kitVersion": "0.14.0",
   "testCommand": "node --test"
 }

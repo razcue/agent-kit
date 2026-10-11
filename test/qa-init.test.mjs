@@ -15,7 +15,7 @@ const tmp = () => join(mkdtempSync(join(tmpdir(), "ak-qa-init-")), "p")
 const cfg = (dir) => JSON.parse(readFileSync(join(dir, "agent-kit.json"), "utf8"))
 const read = (dir, rel) => readFileSync(join(dir, rel), "utf8")
 
-test("002/AC-1 002/AC-8 defaults on a Supabase project: checklist + test data scaffolded, init migration has _env", () => {
+test("qa.R1.S1 qa.R8.S1 defaults on a Supabase project: checklist + test data scaffolded, init migration has _env", () => {
   const dir = tmp()
   cli("init", dir, "--yes", "--name", "shop", "--apps", "web,app", "--git", "pr")
   assert.deepEqual(cfg(dir).qa, { checklist: true, testData: true, testPrefix: "TEST_", testDataDir: "supabase/test-data" })
@@ -27,7 +27,7 @@ test("002/AC-1 002/AC-8 defaults on a Supabase project: checklist + test data sc
   assert.match(read(dir, "work/qa/checklist.md"), /0 scenario\(s\) in 0 capability\(ies\)/)
 })
 
-test("002/AC-1 projects without Supabase never get test data, even when asked", () => {
+test("qa.R1.S2 projects without Supabase never get test data, even when asked", () => {
   for (const kind of ["blank", "site"]) {
     const dir = tmp()
     cli("init", dir, "--yes", "--kind", kind, "--name", "nosb", "--git", "pr", "--test-data", "true")
@@ -42,7 +42,7 @@ test("002/AC-1 projects without Supabase never get test data, even when asked", 
   assert.equal(cfg(existing).qa.testData, true, "existing project using supabase-js is detected")
 })
 
-test("002/AC-2 changing the answers keeps existing files; a custom prefix fills the templates", () => {
+test("qa.R2.S1 changing the answers keeps existing files; a custom prefix fills the templates", () => {
   const dir = tmp()
   cli("init", dir, "--yes", "--name", "shop", "--apps", "app", "--git", "pr", "--test-prefix", "QA_")
   assert.match(read(dir, "supabase/test-data/purge.sql"), /starts_with\(codigo, 'QA_'\)/)
@@ -55,7 +55,7 @@ test("002/AC-2 changing the answers keeps existing files; a custom prefix fills 
   assert.ok(existsSync(join(dir, "work/qa/checklist.md")), "work/qa untouched")
 })
 
-test("002/AC-10 upgrade of a project set up before QA: defaults added, existing files untouched", () => {
+test("qa.R10.S3 upgrade of a project set up before QA: defaults added, existing files untouched", () => {
   const dir = tmp()
   cli("init", dir, "--yes", "--name", "old", "--apps", "app", "--git", "pr")
   const c = cfg(dir)

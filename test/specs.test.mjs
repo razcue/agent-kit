@@ -48,7 +48,7 @@ While a session is stored, the app shall restore it on reload.
 - Then the login page is shown
 `
 
-test("001/AC-1 EARS: each pattern is recognised, free text is not", () => {
+test("specs.R1.S1 EARS: each pattern is recognised, free text is not", () => {
   assert.equal(earsPattern("The system shall log every change."), "ubiquitous")
   assert.equal(earsPattern("When a user saves, the system shall store the record."), "event")
   assert.equal(earsPattern("While offline, the app shall queue orders."), "state")
@@ -60,7 +60,7 @@ test("001/AC-1 EARS: each pattern is recognised, free text is not", () => {
   assert.equal(earsPattern("When a user saves the record is stored."), null)
 })
 
-test("001/AC-1 lint reports a requirement that is not EARS, with its ID", () => {
+test("specs.R1.S2 lint reports a requirement that is not EARS, with its ID", () => {
   assert.deepEqual(lintSpec(LIVING, "auth").errors, [])
   const bad = LIVING.replace("When a user fails 5 logins within 15 minutes, the system shall refuse further attempts with 429.", "Throttle logins.")
   const { errors } = lintSpec(bad, "auth")
@@ -68,7 +68,7 @@ test("001/AC-1 lint reports a requirement that is not EARS, with its ID", () => 
   assert.match(errors[0], /^auth\.R1: .*EARS/)
 })
 
-test("001/AC-2 lint reports scenarios without a ZOMBIES tag, without Given/When/Then, duplicated or foreign", () => {
+test("specs.R2.S1 lint reports scenarios without a ZOMBIES tag, without Given/When/Then, duplicated or foreign", () => {
   const noTag = LIVING.replace("Fifth failure blocks @boundary", "Fifth failure blocks")
   assert.match(lintSpec(noTag, "auth").errors.join("\n"), /auth\.R1\.S1: .*ZOMBIES/)
   const badTag = LIVING.replace("@boundary", "@happy")
@@ -85,7 +85,7 @@ test("001/AC-2 lint reports scenarios without a ZOMBIES tag, without Given/When/
   assert.match(lintSpec(noScenario, "auth").errors.join("\n"), /auth\.R1: no scenario/)
 })
 
-test("001/AC-2 lint warns when a requirement has only happy-path scenarios", () => {
+test("specs.R2.S2 lint warns when a requirement has only happy-path scenarios", () => {
   const happy = LIVING.replace("Expired session @exception", "Second reload @simple")
   assert.match(lintSpec(happy, "auth").warnings.join("\n"), /auth\.R2: .*@exception or @boundary/)
   assert.deepEqual(lintSpec(LIVING, "auth").warnings, [])
@@ -139,7 +139,7 @@ test("parse delta: added, modified, removed", () => {
   assert.deepEqual(d.removed.map((r) => r.id), ["auth.R1"])
 })
 
-test("001/AC-3 merge appends ADDED, replaces MODIFIED, removes REMOVED and retires their ids", () => {
+test("specs.R3.S1 merge appends ADDED, replaces MODIFIED, removes REMOVED and retires their ids", () => {
   const { text, conflicts } = mergeDelta(LIVING, DELTA, "auth")
   assert.deepEqual(conflicts, [])
   const s = parseSpec(text)
@@ -151,7 +151,7 @@ test("001/AC-3 merge appends ADDED, replaces MODIFIED, removes REMOVED and retir
   assert.deepEqual(lintSpec(text, "auth").errors, [])
 })
 
-test("001/AC-3 merge of a new capability creates its living spec", () => {
+test("specs.R3.S2 merge of a new capability creates its living spec", () => {
   const delta = "# Delta — billing\n\n## Purpose\nInvoices and payments.\n\n## ADDED Requirements\n\n### billing.R1 — Totals\nThe system shall round invoice totals to 3 decimals.\n\n#### billing.R1.S1 — Rounding @boundary\n- Given a line of 0.0005\n- When the invoice is totalled\n- Then the total is 0.001\n"
   const { text, conflicts } = mergeDelta(null, delta, "billing")
   assert.deepEqual(conflicts, [])
@@ -159,7 +159,7 @@ test("001/AC-3 merge of a new capability creates its living spec", () => {
   assert.deepEqual(lintSpec(text, "billing").errors, [])
 })
 
-test("001/AC-4 merge refuses MODIFIED/REMOVED of a missing requirement and ADDED of a taken or retired id", () => {
+test("specs.R4.S1 merge refuses MODIFIED/REMOVED of a missing requirement and ADDED of a taken or retired id", () => {
   const missing = mergeDelta(LIVING, DELTA.replace("### auth.R1 — Login throttle", "### auth.R7 — Ghost"), "auth")
   assert.match(missing.conflicts.join("\n"), /auth\.R7: REMOVED but not in the living spec/)
   assert.equal(missing.text, null)
@@ -181,7 +181,7 @@ function project() {
   return dir
 }
 
-test("001/AC-3 mergeChange writes the living specs once; a second merge changes nothing", () => {
+test("specs.R3.S3 mergeChange writes the living specs once; a second merge changes nothing", () => {
   const dir = project()
   const first = mergeChange(dir, "007", "2026-10-10")
   assert.deepEqual(first.conflicts, [])
@@ -194,7 +194,7 @@ test("001/AC-3 mergeChange writes the living specs once; a second merge changes 
   assert.equal(readFileSync(join(dir, "work", "specs", "auth", "spec.md"), "utf8"), after)
 })
 
-test("001/AC-4 mergeChange writes nothing when any delta conflicts", () => {
+test("specs.R4.S2 mergeChange writes nothing when any delta conflicts", () => {
   const dir = project()
   writeFileSync(join(dir, "work", "changes", "007-logout", "specs", "users.md"), "# Delta — users\n\n## REMOVED Requirements\n\n### users.R1 — Ghost\nReason: x\n")
   const r = mergeChange(dir, "007", "2026-10-10")
@@ -203,7 +203,7 @@ test("001/AC-4 mergeChange writes nothing when any delta conflicts", () => {
   assert.doesNotMatch(readFileSync(join(dir, "work", "changes", "007-logout", "proposal.md"), "utf8"), /merged:/)
 })
 
-test("001/AC-5 next id skips living, retired and pending-delta ids", () => {
+test("specs.R5.S1 next id skips living, retired and pending-delta ids", () => {
   const living = LIVING.replace("capability: auth", "capability: auth\nretired: [auth.R7]")
   assert.equal(nextId("auth", [living], []), "auth.R8")
   assert.equal(nextId("auth", [LIVING], []), "auth.R3")
@@ -214,7 +214,7 @@ test("001/AC-5 next id skips living, retired and pending-delta ids", () => {
   assert.equal(nextId("auth.R2", [LIVING.replace("capability: auth", "capability: auth\nretired: [auth.R2.S5]")], []), "auth.R2.S6")
 })
 
-test("001/AC-6 trace: tests naming the scenario id, ✅ rows, or not covered", () => {
+test("specs.R6.S1 trace: tests naming the scenario id, ✅ rows, or not covered", () => {
   const scenarios = parseSpec(LIVING).requirements.flatMap((r) => r.scenarios)
   const tests = [
     { path: "a.test.ts", text: 'it("auth.R1.S1 blocks the fifth failure")' },

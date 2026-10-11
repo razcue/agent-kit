@@ -5,7 +5,7 @@ import { existsSync, readFileSync } from "node:fs"
 import { join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { PROJECT_FILE, findProjectDir, readJson } from "../../plugin/scripts/config.mjs"
-import { KIT_VERSION, QUESTIONS, init, usesSupabase } from "./init.mjs"
+import { KIT_VERSION, QUESTIONS, gitBranches, init, pickMainBranch, usesSupabase } from "./init.mjs"
 import { changesSince } from "./lifecycle.mjs"
 import { migrateWorkLayout } from "../../plugin/scripts/work.mjs"
 import { createPrompter } from "./prompt.mjs"
@@ -43,6 +43,22 @@ export async function upgrade(target, flags) {
     } finally {
       p?.close()
     }
+  }
+  // The configured main branch must exist (locally or on the remote); otherwise detect it or ask.
+  const git = gitBranches(dir)
+  if (flags.main === undefined && cfg.mainBranch && git.branches.length && !git.branches.includes(cfg.mainBranch)) {
+    const detected = pickMainBranch(git)
+    if (detected.sure) {
+      answers.main = detected.branch
+      console.log(`  main branch: "${cfg.mainBranch}" doesn't exist → "${detected.branch}"`)
+    } else if (!flags.yes) {
+      const p = createPrompter()
+      try {
+        answers.main = (await p.text(`Main (production) branch ("${cfg.mainBranch}" doesn't exist)`, detected.branch ?? cfg.mainBranch)) || cfg.mainBranch
+      } finally {
+        p.close()
+      }
+    } else console.log(`  main branch: "${cfg.mainBranch}" doesn't exist and couldn't be detected — re-run with --main <branch>`)
   }
   // 0.13: changes moved from work/specs/NNN-slug/ to work/changes/; work/specs/ now holds living specs.
   for (const line of migrateWorkLayout(dir)) console.log(`  move    ${line}`)

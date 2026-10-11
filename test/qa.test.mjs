@@ -49,7 +49,7 @@ const LIVING = [
 ]
 const SEED = "BEGIN;\n-- @fixture billing.R1.S1 billing.R1.S2 @boundary\nSELECT 1;\n-- @fixture ghost.R9.S1 @one\nCOMMIT;\n"
 
-test("002/AC-3 checklist: one item per scenario grouped by capability, with steps and tag; stable", () => {
+test("qa.R3.S1 checklist: one item per scenario grouped by capability, with steps and tag; stable", () => {
   const items = checklistItems(LIVING, [])
   assert.deepEqual(items.map((i) => i.id), ["auth.R1.S1", "auth.R1.S2", "billing.R1.S1", "billing.R1.S2", "billing.R1.S3"])
   const md = renderChecklist(items, { fixturesFile: null })
@@ -59,7 +59,7 @@ test("002/AC-3 checklist: one item per scenario grouped by capability, with step
   assert.equal(renderChecklist(checklistItems(LIVING, []), { fixturesFile: null }), md, "same input → same output")
 })
 
-test("002/AC-4 fixtures: tagged sections map to scenarios; gaps list both directions", () => {
+test("qa.R4.S1 fixtures: tagged sections map to scenarios; gaps list both directions", () => {
   const fixtures = parseFixtures(SEED)
   assert.deepEqual(fixtures, [
     { ids: ["billing.R1.S1", "billing.R1.S2"], tag: "boundary", line: 2 },
@@ -75,7 +75,7 @@ test("002/AC-4 fixtures: tagged sections map to scenarios; gaps list both direct
   assert.deepEqual(gaps.unknown, [{ id: "ghost.R9.S1", line: 4 }])
 })
 
-test("002/AC-5 run file: every scenario unticked with its hash, grouped; same day gets -2", () => {
+test("qa.R5.S1 run file: every scenario unticked with its hash, grouped; same day gets -2", () => {
   const dir = mkdtempSync(join(tmpdir(), "ak-qa-"))
   const items = checklistItems(LIVING, [])
   const first = startRun(dir, items, "2026-10-10")
@@ -87,7 +87,7 @@ test("002/AC-5 run file: every scenario unticked with its hash, grouped; same da
   assert.equal(startRun(dir, items, "2026-10-10"), "work/qa/runs/2026-10-10-2.md")
 })
 
-test("002/AC-6 status: latest result per scenario; re-check when its text changed; never run otherwise", () => {
+test("qa.R6.S1 status: latest result per scenario; re-check when its text changed; never run otherwise", () => {
   const items = checklistItems(LIVING, [])
   const h = Object.fromEntries(items.map((i) => [i.id, i.hash]))
   const run1 = `# QA run\n\n| Scenario | Hash | Result | Note |\n|---|---|---|---|\n| auth.R1.S1 | ${h["auth.R1.S1"]} | fail | 500 instead of 429 |\n| billing.R1.S1 | ${h["billing.R1.S1"]} | pass |  |\n`
@@ -103,7 +103,7 @@ test("002/AC-6 status: latest result per scenario; re-check when its text change
   assert.equal(scenarioHash("a  b\n c"), scenarioHash("a b c"), "whitespace doesn't change the hash")
 })
 
-test("002/AC-7 html: self-contained page with every item; its export uses the run-file format", () => {
+test("qa.R7.S1 html: self-contained page with every item; its export uses the run-file format", () => {
   const items = checklistItems(LIVING, [])
   const html = renderHtml(items, { name: "demo" })
   assert.match(html, /^<!doctype html>/)
@@ -134,7 +134,7 @@ test("sync: writes checklist.md and checklist.html; reports whether anything cha
   assert.equal(syncQa(dir, { check: true }).outOfSync, true)
 })
 
-test("002/AC-11 preflight: migrations without seed/purge changes, stale checklist and unknown fixtures warn", async () => {
+test("qa.R11.S1 preflight: migrations without seed/purge changes, stale checklist and unknown fixtures warn", async () => {
   const { qaPreflight } = await import("../plugin/scripts/qa.mjs")
   const { analyze } = await import("../plugin/scripts/preflight.mjs")
   const dir = mkdtempSync(join(tmpdir(), "ak-qa-"))
@@ -158,10 +158,10 @@ test("002/AC-11 preflight: migrations without seed/purge changes, stale checklis
   status.set("supabase/test-data/purge.sql", "M")
   assert.deepEqual(qaPreflight(dir, status).migrationsWithoutSeed, [])
   writeFileSync(join(dir, "agent-kit.json"), JSON.stringify({ name: "demo", qa: { checklist: false, testData: false } }))
-  assert.deepEqual(qaPreflight(dir, new Map([["supabase/migrations/x.sql", "A"]])), { outOfSync: false, unknown: [], migrationsWithoutSeed: [] }, "002/AC-10 off → nothing")
+  assert.deepEqual(qaPreflight(dir, new Map([["supabase/migrations/x.sql", "A"]])), { outOfSync: false, unknown: [], migrationsWithoutSeed: [] }, "qa.R10.S2 off → nothing")
 })
 
-test("002/AC-8 002/AC-9 test-data templates: one transaction, the _env guard before any change, marked rows only", () => {
+test("qa.R8.S2 qa.R9.S1 test-data templates: one transaction, the _env guard before any change, marked rows only", () => {
   const dir = new URL("../templates/qa/supabase-test-data/", import.meta.url)
   const sql = (f) => readFileSync(new URL(f, dir), "utf8").replace(/^--.*$/gm, "").trim()
   for (const f of ["seed.sql", "purge.sql"]) {
@@ -176,7 +176,7 @@ test("002/AC-8 002/AC-9 test-data templates: one transaction, the _env guard bef
   assert.doesNotMatch(env, /INSERT INTO/, "env.sql never sets a value: each environment sets its own")
 })
 
-test("002/AC-10 session context names the QA setup only when it is on", async () => {
+test("qa.R10.S1 session context names the QA setup only when it is on", async () => {
   const { qaLine } = await import("../plugin/scripts/session-start.mjs")
   assert.equal(qaLine(undefined), null)
   assert.equal(qaLine({ checklist: false, testData: false }), null)
@@ -185,7 +185,7 @@ test("002/AC-10 session context names the QA setup only when it is on", async ()
   assert.match(qaLine({ checklist: true, testData: true, testPrefix: "QA_", testDataDir: "db/test-data" }), /`db\/test-data\/`.*`QA_`.*@fixture/)
 })
 
-test("002/AC-10 a project set up before QA (no `qa` in agent-kit.json) has QA off until upgrade asks", async () => {
+test("qa.R10.S2 a project set up before QA (no `qa` in agent-kit.json) has QA off until upgrade asks", async () => {
   const { qaConfig, qaPreflight } = await import("../plugin/scripts/qa.mjs")
   const dir = mkdtempSync(join(tmpdir(), "ak-qa-"))
   writeFileSync(join(dir, "agent-kit.json"), JSON.stringify({ name: "old" }))

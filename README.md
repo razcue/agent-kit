@@ -145,16 +145,27 @@ npm run knowledge:index && npm run knowledge:check     # global indexes + valida
 
 ## Website
 
-`site/` is the project site (plain HTML + CSS, English and Spanish, `llms.txt`), deployed
-to GitHub Pages by `.github/workflows/pages.yml` on every push to `main` that touches it:
-**https://razcue.github.io/agent-kit/**. One-time setup: repository Settings → Pages →
-Source: *GitHub Actions*. Preview locally by opening `site/index.html`.
+Full documentation, in English and Spanish: **https://razcue.github.io/agent-kit/**.
+
+`site/` is a Docus 5 project (Nuxt Content + Nuxt UI): `content/en/` and `content/es/` mirror
+each other. GitHub Pages builds it on every push to `master` that touches it
+(`.github/workflows/pages.yml`, `npm run generate:pages`, base path `/agent-kit/`); one-time
+setup: repository Settings → Pages → Source: *GitHub Actions*. The same app on Vercel (root
+directory `site`, `site/vercel.json`) serves Docus's MCP server at `/mcp`.
+
+```bash
+cd site && npm install && npm run dev            # preview at http://localhost:3000
+node scripts/release/docs.mjs sync               # regenerate the reference pages from the source
+node scripts/release/docs.mjs check              # every page translated and current (npm test runs it)
+node scripts/release/docs.mjs stamp <es page>    # after translating a page
+```
 
 ## For non-technical users
 
-[`docs/guia-sitio-web.md`](docs/guia-sitio-web.md) (Spanish): how to build and change a
-content site by talking to Claude — setup command, how sessions go with the `start`
-skill, previewing, what can't be broken, publishing.
+[Your website with Claude](https://razcue.github.io/agent-kit/en/guides/content-site) ·
+[Tu sitio web con Claude](https://razcue.github.io/agent-kit/es/guides/content-site): how to
+build and change a content site by talking to Claude — setup command, how sessions go with
+the `start` skill, previewing, what can't be broken, publishing.
 
 ## Upgrading, removing
 

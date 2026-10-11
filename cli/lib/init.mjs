@@ -1,6 +1,7 @@
 // `agent-kit init`: fixed questions → agent-kit.json, AGENTS.md block, CLAUDE.md,
 // .claude/settings.json, .knowledge/, work/ and (new projects) the monorepo scaffold.
 // Re-runnable: an existing agent-kit.json only updates the agent layer.
+import { execFileSync } from "node:child_process"
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs"
 import { basename, dirname, join, relative, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
@@ -112,6 +113,7 @@ export const GIT_RULES = {
   },
 }
 
+const slugBranch = (s) => String(s ?? "").trim().replace(/[^\w./-]+/g, "-")
 const valid = (key, value) => QUESTIONS[key].some((o) => o.value === value)
 
 /** Whether the project's database is Supabase (test-data scripts only apply there, for now). */
@@ -121,6 +123,33 @@ export function usesSupabase(cfg, dir) {
   if (cfg.stack === "nuxt-supabase" || existsSync(join(dir, "supabase"))) return true
   const pkg = readJson(join(dir, "package.json")) ?? {}
   return ["dependencies", "devDependencies"].some((k) => pkg[k]?.["@supabase/supabase-js"] || pkg[k]?.supabase)
+}
+
+const MAIN_NAMES = ["main", "master", "trunk", "production", "prod"]
+
+/** Pure: the main (production) branch from what git reports; `sure` = no need to ask. */
+export function pickMainBranch({ originHead, branches, current }) {
+  if (originHead) return { branch: originHead, sure: true }
+  const known = MAIN_NAMES.filter((b) => branches.includes(b))
+  if (known.length === 1) return { branch: known[0], sure: true }
+  if (current && known.includes(current)) return { branch: current, sure: false }
+  return { branch: known[0] ?? current ?? null, sure: false }
+}
+
+/** Read-only git facts for branch detection; empty when `dir` is not a repository. */
+export function gitBranches(dir) {
+  const git = (...args) => {
+    try {
+      return execFileSync("git", ["-C", dir, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim()
+    } catch {
+      return ""
+    }
+  }
+  if (!existsSync(dir) || git("rev-parse", "--is-inside-work-tree") !== "true") return { repo: false, originHead: null, branches: [], current: null }
+  const originHead = git("symbolic-ref", "--short", "-q", "refs/remotes/origin/HEAD").replace(/^origin\//, "") || null
+  const refs = git("for-each-ref", "--format=%(refname:short)", "refs/heads", "refs/remotes").split("\n").filter(Boolean)
+  const branches = [...new Set(refs.map((r) => r.replace(/^origin\//, "")).filter((r) => r !== "HEAD" && r !== "origin"))]
+  return { repo: true, originHead, branches, current: git("branch", "--show-current") || null }
 }
 
 const bool = (flag, value) => {
@@ -302,7 +331,10 @@ function parseFlags(flags) {
     out.apps = String(flags.apps).split(",").map((s) => s.trim()).filter(Boolean)
     for (const a of out.apps) if (!valid("apps", a)) throw new Error(`--apps: choose from web, app, docs`)
   }
-  if (flags.main) out.mainBranch = flags.main
+  if (flags.main) {
+    if (!/^[\w./-]+$/.test(flags.main)) throw new Error("--main: a branch name, e.g. main or master")
+    out.mainBranch = flags.main
+  }
   if (flags["qa-checklist"] !== undefined) out.qaChecklist = bool("qa-checklist", flags["qa-checklist"])
   if (flags["test-data"] !== undefined) out.testData = bool("test-data", flags["test-data"])
   if (flags["test-prefix"] !== undefined) {
@@ -368,7 +400,20 @@ export async function init(target, flags) {
       }[key]
       cfg[key] = given[key] ?? (p ? await p.select(title, QUESTIONS[key], defaults[key]) : defaults[key])
     }
-    cfg.mainBranch = given.mainBranch ?? defaults.mainBranch
+    // The main (production) branch: the flag, the saved answer, what git shows, or ask.
+    let branchNote = ""
+    if (given.mainBranch || previous?.mainBranch) cfg.mainBranch = given.mainBranch ?? previous.mainBranch
+    else {
+      const detected = pickMainBranch(gitBranches(dir))
+      if (detected.sure) {
+        cfg.mainBranch = detected.branch
+        branchNote = " (detected)"
+      } else if (p) cfg.mainBranch = slugBranch(await p.text("Main (production) branch", detected.branch ?? "main")) || detected.branch || "main"
+      else {
+        cfg.mainBranch = detected.branch ?? "main"
+        branchNote = detected.branch ? " (guessed — check it)" : ""
+      }
+    }
     // Thin route handlers are not unit-tested; their logic lives in packages/shared or RPCs.
     cfg.testIgnore = previous?.testIgnore ?? (cfg.kind === "monorepo" ? ["apps/*/server/api/"] : [])
     cfg.stack =
@@ -402,7 +447,7 @@ export async function init(target, flags) {
     console.log(
       `  ${scaffold ? (cfg.kind === "site" ? "scaffold content site" : `scaffold monorepo: ${cfg.apps.join(", ")}`) : cfg.kind === "blank" ? "agent layer only (blank project)" : "agent layer only"}${STACK_SKILLS[cfg.stack] ? ` + ${STACK_SKILLS[cfg.stack]} skill` : ""}`,
     )
-    console.log(`  profile: ${cfg.technicalLevel}, ${cfg.language}, ${cfg.methodology}, commits ${cfg.commitConvention}, git ${cfg.gitFlow} (main branch: ${cfg.mainBranch})`)
+    console.log(`  profile: ${cfg.technicalLevel}, ${cfg.language}, ${cfg.methodology}, commits ${cfg.commitConvention}, git ${cfg.gitFlow} (main branch: ${cfg.mainBranch}${branchNote})`)
     console.log(`  qa: checklist ${cfg.qa.checklist ? "on" : "off"}, test data ${cfg.qa.testData ? `on (${cfg.qa.testDataDir}, prefix ${cfg.qa.testPrefix})` : "off"}`)
     console.log(`  plugin: agent-kit@agent-kit from ${marketplaceSpec}\n`)
     if (p && !(await p.confirm("Write these files?"))) return 1
@@ -452,7 +497,9 @@ export async function init(target, flags) {
     if (cfg.kind === "blank" && !existsSync(join(dir, "package.json")))
       w.write("package.json", `${JSON.stringify({ name: cfg.name, version: "0.0.0", private: true, type: "module", scripts: { test: "node --test" } }, null, 2)}\n`)
 
-    w.write(PROJECT_FILE, `${JSON.stringify(cfg, null, 2)}\n`)
+    // Fields init doesn't ask about (testCommand, contextBudget, …) are the project's: keep them.
+    const kept = Object.fromEntries(Object.entries(previous ?? {}).filter(([k]) => !(k in cfg)))
+    w.write(PROJECT_FILE, `${JSON.stringify({ ...cfg, ...kept }, null, 2)}\n`)
     if (cfg.qa.checklist) for (const f of syncQa(dir).written) w.log.push(`qa      ${f}`)
 
     const agentsPath = join(dir, "AGENTS.md")

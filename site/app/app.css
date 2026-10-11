@@ -1,0 +1,56 @@
+/*
+ * Theme of https://razcue.github.io (src/styles/global.css), mapped onto Nuxt UI's tokens.
+ * Light: white / slate surfaces, sky accent. Dark: navy surfaces, mint accent.
+ */
+:root {
+  --rz-bg: #ffffff;
+  --rz-surface: #f8fafc;
+  --rz-text: #1e293b;
+  --rz-text-secondary: #64748b;
+  --rz-accent: #0ea5e9;
+
+  --ui-primary: var(--rz-accent);
+  --ui-bg: var(--rz-bg);
+  --ui-bg-muted: var(--rz-surface);
+  --ui-bg-elevated: var(--rz-surface);
+  --ui-bg-accented: #eef2f7;
+  --ui-text-highlighted: var(--rz-text);
+  --ui-text: var(--rz-text);
+  --ui-text-toned: #334155;
+  --ui-text-muted: var(--rz-text-secondary);
+  --ui-text-dimmed: #94a3b8;
+  --ui-text-inverted: #ffffff;
+  --ui-border: #e2e8f0;
+  --ui-border-muted: #eef2f7;
+  --ui-border-accented: #cbd5e1;
+}
+
+.dark {
+  --rz-bg: #0a192f;
+  --rz-surface: #112240;
+  --rz-text: #e6f1ff;
+  --rz-text-secondary: #8892b0;
+  --rz-accent: #64ffda;
+
+  --ui-primary: var(--rz-accent);
+  --ui-bg: var(--rz-bg);
+  --ui-bg-muted: var(--rz-surface);
+  --ui-bg-elevated: var(--rz-surface);
+  --ui-bg-accented: #1d3461;
+  --ui-text-highlighted: var(--rz-text);
+  --ui-text: #ccd6f6;
+  --ui-text-toned: #a8b2d1;
+  --ui-text-muted: var(--rz-text-secondary);
+  --ui-text-dimmed: #5d6b8a;
+  /* Text on the mint accent (solid buttons) stays navy for contrast. */
+  --ui-text-inverted: #0a192f;
+  --ui-border: #1d3461;
+  --ui-border-muted: #172a4d;
+  --ui-border-accented: #2a4677;
+}
+
+/* Code blocks and inline code on the site's surface colour. */
+.dark .shiki,
+.dark pre {
+  background-color: var(--rz-surface);
+}
