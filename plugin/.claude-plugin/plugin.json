@@ -1,7 +1,7 @@
 {
   "name": "agent-kit",
   "displayName": "agent-kit",
-  "version": "0.14.2",
+  "version": "0.14.3",
   "description": "Spec-anchored SDD for Claude Code: work lanes, living specs (EARS + Given/When/Then + ZOMBIES) traced to tests, QA checklist, TDD, session resume, git-flow guard, preflight, script registry and scoped knowledge.",
   "author": {
     "name": "Rayko Azcue",

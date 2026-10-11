@@ -104,7 +104,7 @@ The website shall publish `llms.txt` and `llms-full.txt` generated from the Engl
 - Then it holds each page once, in English
 
 ### website.R7 — MCP server on Vercel
-Where the site is deployed to Vercel, the deployment shall serve Docus's MCP server at `/mcp`, so agents can list and read the documentation pages.
+Where the site is deployed to Vercel, the deployment shall serve Docus's MCP server at `/mcp`, so agents can list and read the documentation pages, and shall not serve Docus's AI assistant.
 
 #### website.R7.S1 — Agent lists pages @simple
 - Given the site deployed to Vercel from `site/`
@@ -115,3 +115,8 @@ Where the site is deployed to Vercel, the deployment shall serve Docus's MCP ser
 - Given the GitHub Pages build (`nuxt generate`)
 - When it finishes
 - Then the static output contains no `/mcp` endpoint and the docs say where the MCP server lives
+
+#### website.R7.S3 — No AI assistant @exception
+- Given a build where Vercel's OIDC token or an AI Gateway key is present
+- When the site is built
+- Then the "Ask AI" assistant is off and `/__docus__/assistant` doesn't exist

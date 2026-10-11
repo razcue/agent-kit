@@ -6,7 +6,7 @@ import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import { pathToFileURL } from "node:url"
 import { lint } from "./commit.mjs"
-import { READ_ONLY, READ_ONLY_FORMS } from "./git-rules.mjs"
+import { KNOWN, READ_ONLY, READ_ONLY_FORMS } from "./git-rules.mjs"
 import { findProjectDir, hookLog, readProject } from "./config.mjs"
 
 
@@ -163,11 +163,6 @@ export function commitMessage(args, rawCommand = "") {
   return parts.length ? parts.join("\n\n") : null
 }
 
-const KNOWN = new Set([
-  ...READ_ONLY, ...Object.keys(READ_ONLY_FORMS), "add", "commit", "push", "reset", "restore", "checkout", "switch",
-  "rebase", "merge", "cherry-pick", "clean", "revert", "pull", "rm", "mv", "am", "apply", "init", "clone", "gc",
-  "prune", "update-ref", "filter-branch", "bisect", "submodule", "tag", "stash", "worktree", "sparse-checkout",
-])
 
 function configuredAlias(dir, name) {
   try {
@@ -220,12 +215,12 @@ export function verdict(call, flow, protectedBranches, branchOf = currentBranch,
   if (flow === "pr") {
     const branch = branchOf(call.dir)
     if (ON_BRANCH.has(sub) && protectedBranches.includes(branch))
-      return `Git flow is branches + pull requests: don't \`git ${sub}\` on ${branch}. Create a feature branch first (\`git switch -c feat/<name>\`).`
+      return `Git flow is branches + PRs: don't \`git ${sub}\` on ${branch}. Create a feature branch first (\`git switch -c feat/<name>\`).`
     if (sub === "push") {
       const targets = args.filter((a) => !a.startsWith("-")).slice(1)
       const hitsProtected = targets.some((r) => protectedBranches.includes(r.split(":").pop()))
       if (hitsProtected || (!targets.length && protectedBranches.includes(branch)))
-        return "Git flow is branches + pull requests: never push to the main branch. Push the feature branch and open a PR."
+        return "Git flow is branches + PRs: never push to the main branch. Push the feature branch and open a PR."
     }
   }
   return null

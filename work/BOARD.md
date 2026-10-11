@@ -4,6 +4,7 @@
 
 | Work | Status | Progress | Next |
 |---|---|---|---|
+| [feature 001-no-ai-assistant](features/001-no-ai-assistant.md) — Turn off Docus's AI assistant on the Vercel deployment | done | 4/4 | — |
 | [change 001-living-specs](changes/001-living-specs) — Living specs and standard notation (EARS + BDD/ATDD + ZOMBIES) | done | 15/15 | — |
 | [change 002-qa-artifacts](changes/002-qa-artifacts) — QA dimension: living checklist and test data | done | 10/10 | — |
 | [change 003-docs-website](changes/003-docs-website) — Documentation website on Docus (full docs, i18n) | done | 8/8 | — |

@@ -9,7 +9,7 @@ A minimal harness for agent-driven development with Claude Code. It gives every 
 | Documentation | https://razcue.github.io/agent-kit/ (English and Spanish) | Read everything: installation, concepts, guides, reference |
 | Docs for agents (MCP) | https://razcue-agent-kit.vercel.app/mcp | This plugin declares it as `agent-kit-docs`, so Claude can look things up in the docs |
 | Claude Code plugin | `/plugin install agent-kit --marketplace razcue/agent-kit` | This plugin, from the repository's marketplace |
-| npm CLI | `npx @razcue/agent-kit@0.14.2 init my-project` | Sets up a project for the plugin |
+| npm CLI | `npx @razcue/agent-kit@0.14.3 init my-project` | Sets up a project for the plugin |
 
 The documentation also publishes `llms.txt` and `llms-full.txt`.
 
@@ -46,7 +46,7 @@ From your shell: `claude plugin install agent-kit --marketplace razcue/agent-kit
 The companion CLI asks a few fixed questions and writes `agent-kit.json`, a managed block in `AGENTS.md`, settings, knowledge and work folders:
 
 ```bash
-npx @razcue/agent-kit@0.14.2 init my-project
+npx @razcue/agent-kit@0.14.3 init my-project
 ```
 
 Then open Claude Code in the project. Without that file, the skills still load but the hooks stay silent.

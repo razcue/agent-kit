@@ -19,3 +19,10 @@ export const READ_ONLY_FORMS = {
   reflog: (a) => !["expire", "delete"].includes(a[0]),
   notes: (a) => a.length === 0 || ["list", "show"].includes(a[0]),
 }
+
+// Every subcommand the guard recognises (aliases resolve only to these).
+export const KNOWN = new Set([
+  ...READ_ONLY, ...Object.keys(READ_ONLY_FORMS), "add", "commit", "push", "reset", "restore", "checkout", "switch",
+  "rebase", "merge", "cherry-pick", "clean", "revert", "pull", "rm", "mv", "am", "apply", "init", "clone", "gc",
+  "prune", "update-ref", "filter-branch", "bisect", "submodule", "tag", "stash", "worktree", "sparse-checkout",
+])

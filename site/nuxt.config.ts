@@ -10,6 +10,10 @@ export default defineNuxtConfig({
     // An origin only: the base path comes from NUXT_APP_BASE_URL (/agent-kit/ on GitHub Pages).
     url: process.env.NUXT_SITE_URL || "https://razcue.github.io",
   },
+  // Docus turns its "Ask AI" assistant on by itself whenever AI Gateway credentials exist — and on
+  // Vercel they always do (VERCEL_OIDC_TOKEN). Not wanted: it needs a paid AI Gateway and sends
+  // visitors' questions to an AI provider. The docs stay readable by agents through MCP and llms.txt.
+  docus: { assistant: { enabled: false } },
   // Docus's MCP server (/mcp) — served by the Vercel deployment; the static build has none.
   mcp: { name: "agent-kit-docs" },
   // llms.txt / llms-full.txt: the English pages only, each once (the Spanish ones mirror them).

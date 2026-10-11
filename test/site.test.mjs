@@ -44,3 +44,7 @@ test("site: the pages build writes stats.json (stars, forks; clones with TRAFFIC
   assert.match(wf, /TRAFFIC_TOKEN: \$\{\{ secrets\.TRAFFIC_TOKEN \}\}/)
   assert.match(wf, /cron:/)
 })
+
+test("website.R7.S3 Docus's AI assistant is explicitly off, even on Vercel", () => {
+  assert.match(read("site/nuxt.config.ts"), /docus:\s*\{\s*assistant:\s*\{\s*enabled:\s*false/)
+})

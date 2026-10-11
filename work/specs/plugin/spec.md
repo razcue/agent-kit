@@ -64,4 +64,4 @@ The plugin README shall state that the scripts pass the user's environment only 
 #### plugin.R4.S2 — Guard without a download pattern @exception
 - Given `plugin/scripts/git-guard.mjs`
 - When its source is scanned
-- Then it contains no download command name (`fetch`, `curl`, `wget`) and still treats `git fetch` as read-only
+- Then it contains no download-like word (`fetch`, `pull`, `clone`, `curl`, `wget`), still treats `git fetch` as read-only, and still blocks `git pull` and `git clone` in a read-only project
